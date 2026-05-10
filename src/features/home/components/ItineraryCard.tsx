@@ -11,7 +11,7 @@ export default function ItineraryCard({ items, onViewAll }: Props) {
   return (
     <button
       onClick={onViewAll}
-      className="rounded-[20px] p-4 text-left flex flex-col min-h-[150px] w-full"
+      className="rounded-[20px] p-4 text-left flex flex-col w-full"
       style={{ background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
     >
       <div className="flex items-center justify-between">

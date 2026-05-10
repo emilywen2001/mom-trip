@@ -7,7 +7,7 @@ interface Props {
 export default function TodayWeatherCard({ weather }: Props) {
   return (
     <div
-      className="rounded-[20px] p-4 flex flex-col min-h-[150px]"
+      className="rounded-[20px] p-4 flex flex-col"
       style={{ background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
     >
       <p className="text-[10px] font-bold tracking-wide" style={{ color: '#B5A696' }}>
