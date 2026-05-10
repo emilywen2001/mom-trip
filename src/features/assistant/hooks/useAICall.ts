@@ -1,96 +1,97 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { assistantApi } from '@/shared/api/assistantApi'
+import { useTripStore } from '@/shared/store/useTripStore'
 import type { AIState, DialogTurn } from '@/shared/types/assistant'
-import { mockChatStream } from '../services/mockChat'
 import { useSpeechSynthesis } from './useSpeechSynthesis'
 
 interface AICallApi {
   aiState: AIState
   turns: DialogTurn[]
-  /** 直接以一段文本提问（推荐卡片 / 录音 mock 转文字 / 键盘输入 都走这里） */
   askText: (text: string) => Promise<void>
   hangUp: () => void
   ttsSupported: boolean
 }
 
-/**
- * 当前演示版：mockChat 替代真实 LLM；TTS 走浏览器原生 SpeechSynthesis。
- * 真实 LLM 接通后把 mockChatStream 换成 assistantApi.chat 即可。
- */
 export function useAICall(): AICallApi {
+  const { currentTrip } = useTripStore()
   const [aiState, setAIState] = useState<AIState>('idle')
   const [turns, setTurns] = useState<DialogTurn[]>([])
   const turnsRef = useRef<DialogTurn[]>([])
 
-  useEffect(() => {
-    turnsRef.current = turns
-  }, [turns])
+  useEffect(() => { turnsRef.current = turns }, [turns])
 
   const tts = useSpeechSynthesis()
 
-  const askText = useCallback(
-    async (text: string) => {
-      const trimmed = text.trim()
-      if (!trimmed) return
-      tts.cancel()
+  // 把 tts 方法存入 ref，避免 tts.speaking 变化时 askText 被重建
+  const speakRef = useRef(tts.speak)
+  const cancelTtsRef = useRef(tts.cancel)
+  const ttsSupportedRef = useRef(tts.supported)
+  useEffect(() => { speakRef.current = tts.speak }, [tts.speak])
+  useEffect(() => { cancelTtsRef.current = tts.cancel }, [tts.cancel])
+  useEffect(() => { ttsSupportedRef.current = tts.supported }, [tts.supported])
 
-      const userTurn: DialogTurn = {
-        role: 'user',
-        content: trimmed,
-        status: 'final',
-        timestamp: Date.now(),
-      }
-      const aiTurn: DialogTurn = { role: 'ai', content: '', status: 'interim', timestamp: Date.now() + 1 }
-      setTurns((prev) => [...prev, userTurn, aiTurn])
-      setAIState('thinking')
+  const currentTripRef = useRef(currentTrip)
+  useEffect(() => { currentTripRef.current = currentTrip }, [currentTrip])
 
-      let full = ''
-      try {
-        await mockChatStream(trimmed, (delta) => {
+  const askText = useCallback(async (text: string) => {
+    const trimmed = text.trim()
+    if (!trimmed) return
+    cancelTtsRef.current()
+
+    const trip = currentTripRef.current
+    const userTurn: DialogTurn = { role: 'user', content: trimmed, status: 'final', timestamp: Date.now() }
+    const aiTurn: DialogTurn = { role: 'ai', content: '', status: 'interim', timestamp: Date.now() + 1 }
+    setTurns((prev) => [...prev, userTurn, aiTurn])
+    setAIState('thinking')
+
+    let full = ''
+    try {
+      const history = turnsRef.current
+        .filter((t) => t.status === 'final')
+        .map((t) => ({ role: t.role === 'ai' ? 'assistant' : 'user', content: t.content }))
+
+      await assistantApi.chat(
+        trimmed,
+        { currentCity: trip?.destination, tripId: trip?.id, currentDay: trip ? 1 : undefined },
+        history,
+        (delta) => {
           full += delta
           setTurns((prev) => {
             const next = [...prev]
             const last = next[next.length - 1]
-            if (last && last.role === 'ai') next[next.length - 1] = { ...last, content: full }
+            if (last?.role === 'ai') next[next.length - 1] = { ...last, content: full }
             return next
           })
-        })
-      } catch {
-        full = '小桥这会儿有点忙呢，妈妈稍等再问我哦~'
-      }
+        }
+      )
+    } catch {
+      full = '小桥这会儿有点忙呢，妈妈稍等再问我哦~'
+    }
 
-      setTurns((prev) => {
-        const next = [...prev]
-        const last = next[next.length - 1]
-        if (last && last.role === 'ai') next[next.length - 1] = { ...last, content: full, status: 'final' }
-        return next
-      })
+    const finalText = full.trim() || '抱歉，我没听清楚，妈妈再说一次好吗~'
+    setTurns((prev) => {
+      const next = [...prev]
+      const last = next[next.length - 1]
+      if (last?.role === 'ai') next[next.length - 1] = { ...last, content: finalText, status: 'final' }
+      return next
+    })
 
-      if (tts.supported && full) {
-        setAIState('speaking')
-        tts.speak(full, { onEnd: () => setAIState('idle') })
-      } else {
-        setAIState('idle')
-      }
-    },
-    [tts]
-  )
+    if (ttsSupportedRef.current && finalText) {
+      setAIState('speaking')
+      speakRef.current(finalText, { onEnd: () => setAIState('idle') })
+    } else {
+      setAIState('idle')
+    }
+  }, []) // 所有依赖通过 ref 访问，引用永远稳定
 
   const hangUp = useCallback(() => {
-    tts.cancel()
+    cancelTtsRef.current()
     setAIState('idle')
-  }, [tts])
+  }, [])
 
   useEffect(() => {
-    return () => {
-      tts.cancel()
-    }
-  }, [tts])
+    return () => { cancelTtsRef.current() }
+  }, [])
 
-  return {
-    aiState,
-    turns,
-    askText,
-    hangUp,
-    ttsSupported: tts.supported,
-  }
+  return { aiState, turns, askText, hangUp, ttsSupported: tts.supported }
 }
