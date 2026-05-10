@@ -18,10 +18,7 @@ export default function BottomControls({
     <div
       className="absolute left-0 right-0 z-20"
       style={{
-        bottom: 'calc(64px + env(safe-area-inset-bottom))',
-        background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
-        paddingTop: 20,
-        paddingBottom: 12,
+        bottom: 'calc(90px + env(safe-area-inset-bottom))',
       }}
     >
       {/* Mode tabs */}

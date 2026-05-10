@@ -78,7 +78,7 @@ export default function ItineraryPage() {
         style={{ background: '#FFFFFF', borderBottom: '1px solid #F0EBE3' }}
       >
         {(['plan', 'ongoing'] as TopTab[]).map((tab) => {
-          const label = tab === 'plan' ? '规划行程' : '行程中'
+          const label = tab === 'plan' ? '新建行程' : '已有行程'
           const active = activeTab === tab
           return (
             <button
@@ -102,13 +102,11 @@ export default function ItineraryPage() {
       {/* ── Plan tab ── */}
       {activeTab === 'plan' && (
         <div className="px-4 pt-5 pb-8">
-          <h1 className="text-[20px] font-bold mb-4" style={{ color: '#2D2A26' }}>规划旅行 ✈️</h1>
-
+          <h1 className="text-[20px] font-bold mb-3" style={{ color: '#2D2A26' }}>⚡ 快速规划</h1>
           <GuideParserCard onGenerated={handleGenerated} />
 
           {/* Hot templates */}
-          <div className="mt-2 mb-4">
-            <p className="text-[15px] font-bold mb-3" style={{ color: '#4A3F35' }}>🔥 热门攻略</p>
+          <div className="mb-4">
             <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 -mx-4 px-4">
               {TEMPLATES.map((t) => (
                 <TripTemplateCard
@@ -123,19 +121,9 @@ export default function ItineraryPage() {
             </div>
           </div>
 
-          {/* Divider */}
-          <div className="relative my-5 text-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full h-px" style={{ background: '#F0EBE3' }} />
-            </div>
-            <span
-              className="relative px-3 text-[13px] font-semibold"
-              style={{ background: '#FAF7F2', color: '#B5A696' }}
-            >
-              或者自己规划
-            </span>
-          </div>
+          <div className="my-5"><div className="w-full h-px" style={{ background: '#F0EBE3' }} /></div>
 
+          <h1 className="text-[20px] font-bold mb-3" style={{ color: '#2D2A26' }}>📝 详细规划</h1>
           <PlanningPanel onGenerated={handleGenerated} />
         </div>
       )}
