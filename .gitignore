@@ -22,6 +22,7 @@ __pycache__/
 *.py[cod]
 backend/dev.db
 backend/uploads/
+backend/venv/
 
 # Editor directories and files
 .vscode/*

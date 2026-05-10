@@ -7,7 +7,7 @@ import HomePage from '@/features/home/pages/HomePage'
 import ItineraryPage from '@/features/itinerary/pages/ItineraryPage'
 import CameraPage from '@/features/camera/pages/CameraPage'
 import AssistantPage from '@/features/assistant/pages/AssistantPage'
-import { VoiceCallPage } from '@/features/assistant'
+import { VoiceCallPage, FloatingAssistant } from '@/features/assistant'
 import ProfilePage from '@/features/profile/pages/ProfilePage'
 
 export default function AppRouter() {
@@ -23,6 +23,7 @@ export default function AppRouter() {
           <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
         </Routes>
         <BottomNav />
+        <FloatingAssistant />
       </div>
     </>
   )

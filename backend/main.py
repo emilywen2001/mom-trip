@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from routers import plan, outfit, weather, assistant, explain, media
+from routers import plan, outfit, weather, assistant, explain, media, voice
 
 app = FastAPI(title="妈妈的旅行小助手 API")
 
@@ -24,6 +24,7 @@ app.include_router(weather.router,   prefix="/api/v1")
 app.include_router(assistant.router, prefix="/api/v1")
 app.include_router(explain.router,   prefix="/api/v1")
 app.include_router(media.router,     prefix="/api/v1")
+app.include_router(voice.router,     prefix="/api/v1")
 
 # Serve uploaded files
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "./uploads")
