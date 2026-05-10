@@ -9,149 +9,135 @@ interface AICallApi {
   aiState: AIState
   turns: DialogTurn[]
   interimText: string
-  /** 用户按下麦克风：开始录音 */
   startTalking: () => void
-  /** 用户松开麦克风：结束录音、提交识别结果 */
   stopTalking: () => void
-  /** 中断 AI 当前播放（重新开始录音时调用） */
   interrupt: () => void
-  /** 直接以一段文本提问（推荐卡片场景） */
   askText: (text: string) => Promise<void>
-  /** 退出会话：取消所有进行中的语音 */
   hangUp: () => void
   asrSupported: boolean
   ttsSupported: boolean
 }
 
-/**
- * 整合 ASR → LLM → TTS 的对话编排器。
- * 当前 ASR/TTS 走 Web Speech API，LLM 走后端 /api/v1/assistant/chat（已对接 DeepSeek）。
- * 后续接入豆包语音模型时，只需替换 useSpeechRecognition / useSpeechSynthesis 实现。
- */
 export function useAICall(): AICallApi {
   const { currentTrip } = useTripStore()
   const [aiState, setAIState] = useState<AIState>('idle')
   const [turns, setTurns] = useState<DialogTurn[]>([])
   const turnsRef = useRef<DialogTurn[]>([])
 
-  useEffect(() => {
-    turnsRef.current = turns
-  }, [turns])
+  useEffect(() => { turnsRef.current = turns }, [turns])
 
   const tts = useSpeechSynthesis()
 
-  const sendToLLM = useCallback(
-    async (userText: string) => {
-      const userTurn: DialogTurn = {
-        role: 'user',
-        content: userText,
-        status: 'final',
-        timestamp: Date.now(),
-      }
-      setTurns((prev) => [...prev, userTurn])
-      setAIState('thinking')
+  // 把 tts 的稳定方法提出来，避免 tts.speaking 变化导致 sendToLLM 重建
+  const { speak, cancel: cancelTts, supported: ttsSupported } = tts
+  const speakRef = useRef(speak)
+  const cancelTtsRef = useRef(cancelTts)
+  useEffect(() => { speakRef.current = speak }, [speak])
+  useEffect(() => { cancelTtsRef.current = cancelTts }, [cancelTts])
 
-      const aiTurn: DialogTurn = { role: 'ai', content: '', status: 'interim', timestamp: Date.now() }
-      setTurns((prev) => [...prev, aiTurn])
+  const currentTripRef = useRef(currentTrip)
+  useEffect(() => { currentTripRef.current = currentTrip }, [currentTrip])
 
-      try {
-        let full = ''
-        const history = turnsRef.current
-          .filter((t) => t.status === 'final')
-          .map((t) => ({ role: t.role === 'ai' ? 'assistant' : 'user', content: t.content }))
+  const sendToLLM = useCallback(async (userText: string) => {
+    const trip = currentTripRef.current
+    const userTurn: DialogTurn = {
+      role: 'user',
+      content: userText,
+      status: 'final',
+      timestamp: Date.now(),
+    }
+    setTurns((prev) => [...prev, userTurn])
+    setAIState('thinking')
 
-        await assistantApi.chat(
-          userText,
-          {
-            currentCity: currentTrip?.destination,
-            tripId: currentTrip?.id,
-            currentDay: currentTrip ? 1 : undefined,
-          },
-          history,
-          (delta) => {
-            full += delta
-            setTurns((prev) => {
-              const next = [...prev]
-              const last = next[next.length - 1]
-              if (last && last.role === 'ai') next[next.length - 1] = { ...last, content: full }
-              return next
-            })
-          }
-        )
+    const aiTurn: DialogTurn = { role: 'ai', content: '', status: 'interim', timestamp: Date.now() }
+    setTurns((prev) => [...prev, aiTurn])
 
-        const finalText = full.trim() || '抱歉，我没听清楚，妈妈再说一次好吗~'
-        setTurns((prev) => {
-          const next = [...prev]
-          const last = next[next.length - 1]
-          if (last && last.role === 'ai') next[next.length - 1] = { ...last, content: finalText, status: 'final' }
-          return next
-        })
+    try {
+      let full = ''
+      const history = turnsRef.current
+        .filter((t) => t.status === 'final')
+        .map((t) => ({ role: t.role === 'ai' ? 'assistant' : 'user', content: t.content }))
 
-        setAIState('speaking')
-        if (tts.supported) {
-          tts.speak(finalText, { onEnd: () => setAIState('idle') })
-        } else {
-          setAIState('idle')
+      await assistantApi.chat(
+        userText,
+        {
+          currentCity: trip?.destination,
+          tripId: trip?.id,
+          currentDay: trip ? 1 : undefined,
+        },
+        history,
+        (delta) => {
+          full += delta
+          setAIState('speaking')
+          setTurns((prev) => {
+            const next = [...prev]
+            const last = next[next.length - 1]
+            if (last?.role === 'ai') next[next.length - 1] = { ...last, content: full }
+            return next
+          })
         }
-      } catch {
-        const fallback = '网络有点慢呢～等会儿再问我吧'
-        setTurns((prev) => {
-          const next = [...prev]
-          const last = next[next.length - 1]
-          if (last && last.role === 'ai') next[next.length - 1] = { ...last, content: fallback, status: 'final' }
-          return next
-        })
-        setAIState('idle')
-      }
-    },
-    [currentTrip, tts]
-  )
+      )
 
-  const asr = useSpeechRecognition({
-    onFinal: (text) => {
-      if (!text) {
-        setAIState('idle')
-        return
-      }
-      void sendToLLM(text)
-    },
-    onError: () => setAIState('idle'),
-  })
+      const finalText = full.trim() || '抱歉，我没听清楚，妈妈再说一次好吗~'
+      setTurns((prev) => {
+        const next = [...prev]
+        const last = next[next.length - 1]
+        if (last?.role === 'ai') next[next.length - 1] = { ...last, content: finalText, status: 'final' }
+        return next
+      })
+
+      setAIState('speaking')
+      speakRef.current(finalText, { onEnd: () => setAIState('idle') })
+    } catch {
+      const fallback = '网络有点慢呢～等会儿再问我吧'
+      setTurns((prev) => {
+        const next = [...prev]
+        const last = next[next.length - 1]
+        if (last?.role === 'ai') next[next.length - 1] = { ...last, content: fallback, status: 'final' }
+        return next
+      })
+      setAIState('idle')
+    }
+  }, []) // 所有依赖都通过 ref 访问，sendToLLM 引用永远稳定
+
+  const onFinal = useCallback((text: string) => {
+    if (!text) { setAIState('idle'); return }
+    void sendToLLM(text)
+  }, [sendToLLM])
+
+  const onError = useCallback(() => setAIState('idle'), [])
+
+  const asr = useSpeechRecognition({ onFinal, onError })
 
   const startTalking = useCallback(() => {
-    if (tts.speaking) tts.cancel()
+    cancelTtsRef.current()
     setAIState('listening')
     asr.start()
-  }, [asr, tts])
+  }, [asr])
 
   const stopTalking = useCallback(() => {
     asr.stop()
   }, [asr])
 
   const interrupt = useCallback(() => {
-    tts.cancel()
-  }, [tts])
+    cancelTtsRef.current()
+  }, [])
 
-  const askText = useCallback(
-    async (text: string) => {
-      if (!text.trim()) return
-      tts.cancel()
-      await sendToLLM(text.trim())
-    },
-    [sendToLLM, tts]
-  )
+  const askText = useCallback(async (text: string) => {
+    if (!text.trim()) return
+    cancelTtsRef.current()
+    await sendToLLM(text.trim())
+  }, [sendToLLM])
 
   const hangUp = useCallback(() => {
     asr.stop()
-    tts.cancel()
+    cancelTtsRef.current()
     setAIState('idle')
-  }, [asr, tts])
+  }, [asr])
 
   useEffect(() => {
-    return () => {
-      tts.cancel()
-    }
-  }, [tts])
+    return () => { cancelTtsRef.current() }
+  }, [])
 
   return {
     aiState,
@@ -163,6 +149,6 @@ export function useAICall(): AICallApi {
     askText,
     hangUp,
     asrSupported: asr.supported,
-    ttsSupported: tts.supported,
+    ttsSupported,
   }
 }
