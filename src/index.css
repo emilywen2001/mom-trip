@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #C8633A;
+  --color-primary-light: #FFE8D4;
+  --color-primary-dark: #A04E2A;
+  --color-secondary: #4A8AB8;
+  --color-secondary-light: #E4F0FB;
+  --color-bg: #FAF7F2;
+  --color-bg-warm: #F0EBE3;
+  --color-surface: #FFFFFF;
+  --color-surface-warm: #F5F1EA;
+  --color-text-primary: #2D2A26;
+  --color-text-secondary: #7B6E65;
+  --color-text-hint: #B5A696;
+  --color-success: #4A8C5C;
+  --color-danger: #E74C3C;
+  --color-warning: #D4A017;
+  --border-radius-xl2: 20px;
+  --border-radius-xl3: 28px;
+  --font-family-sans: 'Noto Sans SC', -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #FAF7F2;
+  font-family: 'Noto Sans SC', -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100svh;
+  background: #FAF7F2;
+  position: relative;
+}
+
+.touchable {
+  min-height: 48px;
+  min-width: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.page-container {
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  min-height: 100svh;
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
