@@ -88,35 +88,69 @@
     background: linear-gradient(135deg,#FFD4B0,#E8A87C);
     color: #fff; font-weight: 800; font-size: 18px; margin-bottom: 14px;
   }
+  .pain .ico {
+    position: relative;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 64px; height: 64px; border-radius: 20px;
+    background: linear-gradient(135deg,#FFE8D4 0%,#FFD4B0 100%);
+    font-size: 34px; line-height: 1; margin-bottom: 18px;
+    box-shadow: 0 6px 18px rgba(200,99,58,.18);
+  }
+  .pain .ico::after {
+    content: attr(data-n);
+    position: absolute; top: -8px; right: -8px;
+    width: 22px; height: 22px; line-height: 22px;
+    text-align: center;
+    background: #C8633A; color: #fff;
+    border-radius: 50%; font-size: 12px; font-weight: 800;
+    box-shadow: 0 2px 6px rgba(200,99,58,.35);
+  }
   .pain h3 { color: #2D2A26; font-size: 20px; }
   .pain p  { font-size: 16px; color: #7B6E65; }
 
-  /* ---------- 五模块 ---------- */
+  /* ---------- 模块卡(产品形态页) ---------- */
   .modules {
-    display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px;
-    margin-top: 12px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px;
+    margin-top: 8px;
   }
   .module {
-    background: #fff; border-radius: 20px;
-    padding: 26px 18px; text-align: center;
+    background: #fff; border-radius: 22px;
+    padding: 30px 26px 28px; text-align: left;
     border: 1px solid #F0EBE3;
+    box-shadow: 0 4px 14px rgba(200,99,58,.05);
+    display: flex; flex-direction: column;
   }
   .module .ico {
-    font-size: 38px; margin-bottom: 12px; display: block;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 60px; height: 60px; border-radius: 18px;
+    background: linear-gradient(135deg,#FFE8D4 0%,#FFD4B0 100%);
+    font-size: 32px; line-height: 1; margin-bottom: 18px;
+    box-shadow: 0 6px 18px rgba(200,99,58,.18);
   }
-  .module.owner {
-    background: linear-gradient(160deg, #FFE8D4 0%, #FFD4B0 100%);
-    border-color: #E8A87C;
-    box-shadow: 0 6px 20px rgba(200,99,58,.18);
-    transform: translateY(-4px);
+  .module h3 {
+    font-size: 22px; font-weight: 800;
+    color: #2D2A26; margin-bottom: 6px;
   }
-  .module h3 { font-size: 17px; }
-  .module p  { font-size: 13px; color: #8B7355; }
-  .module .me {
-    display: inline-block; margin-top: 10px;
-    font-size: 11px; font-weight: 700; letter-spacing: 1px;
-    background: #C8633A; color: #fff;
-    padding: 3px 10px; border-radius: 999px;
+  .module .sub {
+    font-size: 13px; font-weight: 700;
+    color: #C8633A; letter-spacing: 1px;
+    margin-bottom: 16px;
+  }
+  .module ul {
+    list-style: none; padding: 0; margin: 0;
+    border-top: 1px dashed #F0EBE3; padding-top: 14px;
+  }
+  .module ul li {
+    font-size: 14px; line-height: 1.55; color: #5C5048;
+    padding: 5px 0 5px 16px; position: relative;
+  }
+  .module ul li::before {
+    content: ""; position: absolute; left: 4px; top: 13px;
+    width: 5px; height: 5px; border-radius: 50%;
+    background: #E8A87C;
+  }
+  .module ul li strong {
+    color: #C8633A; font-weight: 700;
   }
 
   /* ---------- Demo 页布局：左文 / 右视频 ---------- */
@@ -252,11 +286,14 @@
   /* ---------- 底部控件 ---------- */
   .chrome {
     position: fixed; left: 0; right: 0; bottom: 0;
-    display: flex; align-items: center; justify-content: space-between;
+    display: grid; grid-template-columns: 1fr auto 1fr;
+    align-items: center;
     padding: 14px 28px;
     background: linear-gradient(180deg, transparent, rgba(0,0,0,.18));
     pointer-events: none;
   }
+  .chrome .pageinfo { justify-self: start; }
+  .chrome .dots { justify-self: center; }
   .chrome > * { pointer-events: auto; }
   .dots { display: flex; gap: 8px; }
   .dot {
@@ -316,61 +353,78 @@
   <section class="slide slide-hero" data-chrome="dark">
     <div class="hero-tag">M O M &nbsp;·&nbsp; T R I P</div>
     <h1>妈妈的旅行小助手</h1>
-    <p>一个全程陪着妈妈的 AI 旅行助手</p>
+    <p>为妈妈而做的一站式 AI 旅行工具</p>
     <div class="hero-meta">
-      <span>5 分钟路演</span>
-      <span>2026 春季</span>
-      <span>4 人协作 · feature-first</span>
+      <span style="opacity:.7; letter-spacing:4px;">成员</span>
+      <span>wimsper</span>
+      <span>小高</span>
+      <span>vesper</span>
+      <span>兔兔兔子</span>
     </div>
   </section>
 
   <!-- ============ 2 · 背景 / 痛点 ============ -->
   <section class="slide" data-chrome="light">
     <div class="eyebrow">为什么要做这个</div>
-    <h2>自己出远门的妈妈,<br/>真的不容易</h2>
+    <h2>出门旅游的妈妈,<br/>真的不容易</h2>
     <div class="pains" style="grid-template-columns: repeat(3, 1fr);">
       <div class="pain">
-        <span class="num">1</span>
+        <span class="ico" data-n="1">🗺️</span>
         <h3>不会规划路线</h3>
-        <p>第一次自己出远门,跟团太累、自由行不知从哪开始;想问孩子又怕烦,攻略看到一半就放弃</p>
+        <p>跟团太累、自由行不知从哪开始;查攻略、订机票订酒店,流程一长就放弃</p>
       </div>
       <div class="pain">
-        <span class="num">2</span>
+        <span class="ico" data-n="2">🎬</span>
         <h3>想出片,但不会剪</h3>
         <p>风景再好,拍出来都是游客照;想发朋友圈、想剪段视频,可惜姿势、构图、剪辑都不会</p>
       </div>
       <div class="pain">
-        <span class="num">3</span>
+        <span class="ico" data-n="3">🔍</span>
         <h3>想了解景点,搜起来太麻烦</h3>
-        <p>看到一座寺、一道菜,想知道是什么、怎么逛;自己打开搜索引擎,半天搜不到重点</p>
+        <p>看到一座寺、一道菜,想知道是什么、怎么逛;打开搜索引擎,半天搜不到重点</p>
       </div>
     </div>
-    <div class="footnote">→ 我们想做的:把"会陪伴的子女"装进她手机里</div>
+    <div class="footnote">→ 我们想做的:把规划、拍剪、讲解一站式装进妈妈的手机</div>
   </section>
 
   <!-- ============ 3 · 产品定位 + 5 模块 ============ -->
   <section class="slide" data-chrome="light">
     <div class="eyebrow">产品形态</div>
-    <h2>不是地图,不是 OTA,<br/>是一个"全程陪着"的小助手</h2>
-    <p style="margin-bottom: 36px; max-width: 760px;">
-      一个移动端 H5,把<strong>行前规划 → 当日导览 → 拍照留念 → 语音陪聊</strong>串成一条线。
-      路演重点演示其中 3 个核心模块。
+    <h2>不是地图,不是 OTA,<br/>是一款替妈妈搞定旅行所有事的 App</h2>
+    <p style="margin-bottom: 32px; max-width: 820px;">
+      <strong>行前规划 · 行中导览 · 行后剪辑</strong>——一站式 App,从查攻略、订机票
+      到回家发朋友圈,一个 App 全搞定。下面是 3 个核心模块。
     </p>
-    <div class="modules" style="grid-template-columns: repeat(3, 1fr); max-width: 880px;">
+    <div class="modules">
       <div class="module">
         <span class="ico">🗺️</span>
         <h3>行程</h3>
-        <p>每日时间轴 · AI 规划</p>
+        <div class="sub">一键规划 + 帮订票</div>
+        <ul>
+          <li>AI 自动生成多日行程,景点、餐厅、节奏全包</li>
+          <li><strong>机票、酒店、门票</strong>一键预订,不用切多个 App</li>
+          <li>每日时间轴 · 自动同步天气和穿搭建议</li>
+        </ul>
       </div>
       <div class="module">
         <span class="ico">📷</span>
         <h3>拍照</h3>
-        <p>姿势引导 · 滤镜</p>
+        <div class="sub">拍照 + 一键成片</div>
+        <ul>
+          <li>全屏相机 · 姿势引导贴纸,对准就好看</li>
+          <li>旅游热门滤镜,出片即发圈</li>
+          <li><strong>每天自动剪辑成短视频</strong>,直接分享社媒</li>
+        </ul>
       </div>
       <div class="module">
         <span class="ico">💬</span>
         <h3>AI 助手</h3>
-        <p>语音通话 · 流式问答</p>
+        <div class="sub">实时语音问答</div>
+        <ul>
+          <li>按住麦克风就能问,像打电话一样直接</li>
+          <li><strong>讲解景点、修改行程、翻译</strong>一句话搞定</li>
+          <li>流式回答 + 真人语调朗读,不识字也能用</li>
+        </ul>
       </div>
     </div>
   </section>
@@ -395,7 +449,7 @@
             data-src="/"
             title="首页"
             allow="camera; microphone; autoplay"
-            style="width:100%; height:100%; border:0; background:#FAF7F2; display:block;"
+            style="width:calc(100% + 17px); height:100%; border:0; background:#FAF7F2; display:block;"
           ></iframe>
         </div>
         <div class="video-caption">实时渲染 · localhost:5173/</div>
@@ -413,14 +467,14 @@
             data-src="/camera"
             title="拍照"
             allow="camera; microphone; autoplay"
-            style="width:100%; height:100%; border:0; background:#FAF7F2; display:block;"
+            style="width:calc(100% + 17px); height:100%; border:0; background:#FAF7F2; display:block;"
           ></iframe>
         </div>
         <div class="video-caption">实时渲染 · /camera</div>
       </div>
       <div class="demo-text">
         <div class="eyebrow">DEMO · 2</div>
-        <h2>给妈妈一个<br/>"会拍照的女儿"</h2>
+        <h2>按下快门,<br/>系统替你剪成片</h2>
         <ul class="points">
           <li>全屏相机,无需切换 App</li>
           <li>姿势引导贴纸:对准就是好看</li>
@@ -431,11 +485,11 @@
     </div>
   </section>
 
-  <!-- ============ 6 · Demo 3 · AI 助手 (重头戏) ============ -->
+  <!-- ============ 6 · Demo 3 · AI 助手 ============ -->
   <section class="slide" data-chrome="light">
-    <div class="demo-grid ai">
+    <div class="demo-grid">
       <div class="demo-text">
-        <span class="ai-highlight">⭐ 高 潮 段</span>
+        <div class="eyebrow">DEMO · 3</div>
         <h2>按住麦克风,<br/>跟"小桥"说句话</h2>
         <ul class="points">
           <li>右下浮窗常驻,任何页面都能呼出</li>
@@ -455,7 +509,7 @@
             data-src="/assistant/voice"
             title="AI 语音通话"
             allow="camera; microphone; autoplay"
-            style="width:100%; height:100%; border:0; background:#FAF7F2; display:block;"
+            style="width:calc(100% + 17px); height:100%; border:0; background:#FAF7F2; display:block;"
           ></iframe>
         </div>
         <div class="video-caption">实时渲染 · /assistant/voice</div>
@@ -463,60 +517,13 @@
     </div>
   </section>
 
-  <!-- ============ 7 · 技术架构 + 团队 ============ -->
-  <section class="slide" data-chrome="light">
-    <div class="eyebrow">技术亮点</div>
-    <h2>30 秒讲清楚怎么做的</h2>
-    <div class="arch">
-      <div class="arch-box">
-        <h3>架构 · feature-first</h3>
-        <div class="arch-row">
-          <span class="arch-tag">前端</span>
-          <span>React + TypeScript + Vite + Tailwind</span>
-        </div>
-        <div class="arch-row">
-          <span class="arch-tag">后端</span>
-          <span>Python FastAPI · SSE 流式</span>
-        </div>
-        <div class="arch-row">
-          <span class="arch-tag">大模型</span>
-          <span>智谱 GLM 流式回答</span>
-        </div>
-        <div class="arch-row">
-          <span class="arch-tag">语音</span>
-          <span>Web Speech API · 已预留豆包 ASR/TTS</span>
-        </div>
-        <div class="arch-row">
-          <span class="arch-tag">天气</span>
-          <span>OpenWeather · 无 key 走 Mock</span>
-        </div>
-      </div>
-      <div class="arch-box">
-        <h3>团队 · 4 人并行</h3>
-        <p style="font-size:15px; margin-bottom:8px;">每人负责一个 feature 目录,
-          shared 层共用,互不踩脚。</p>
-        <div class="arch-team">
-          <div class="team-item">🏠 home / 首页</div>
-          <div class="team-item">🗺️ itinerary / 行程</div>
-          <div class="team-item">📷 camera / 拍照</div>
-          <div class="team-item mine">💬 assistant / AI 助手 (我)</div>
-        </div>
-        <div style="margin-top:22px; padding:14px 16px; background:#FAF7F2; border-radius:12px;
-                    font-size:14px; color:#7B6E65; line-height:1.6;">
-          <strong style="color:#C8633A;">为什么这套架构能并行:</strong><br/>
-          每个 feature 独立有 pages / components / hooks / services,
-          只通过 shared/store 共享状态,合并几乎无冲突。
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ 8 · 结尾 ============ -->
+  <!-- ============ 7 · 结尾 ============ -->
   <section class="slide slide-hero slide-end" data-chrome="dark">
     <div class="quote">
-      "我们想做的不是工具,<br/>
-      是替子女说一句——<br/>
-      <span style="color:#FFE8D4;">妈,路上有人陪你。"</span>
+      不会规划,我们规划。<br/>
+      不会剪,我们剪。<br/>
+      不会查,我们查。<br/>
+      <span style="color:#FFE8D4;">这就是妈妈的旅行小助手。</span>
     </div>
     <div class="sign">M O M · T R I P &nbsp;&nbsp;|&nbsp;&nbsp; 谢 谢 聆 听</div>
   </section>
@@ -527,10 +534,8 @@
 <div class="chrome">
   <div class="pageinfo"><span id="page-cur">1</span> / <span id="page-total">8</span></div>
   <div class="dots" id="dots"></div>
-  <div class="timer" id="timer" title="点击开始/暂停 5 分钟计时">00:00 / 05:00</div>
+  <div></div>
 </div>
-
-<div class="help">← → 切页 &nbsp;·&nbsp; 数字键直达 &nbsp;·&nbsp; F 全屏 &nbsp;·&nbsp; T 计时</div>
 
 <script>
   const slides = document.querySelectorAll('.slide');
@@ -595,8 +600,6 @@
     } else if (e.key === 'f' || e.key === 'F') {
       if (!document.fullscreenElement) document.documentElement.requestFullscreen();
       else document.exitFullscreen();
-    } else if (e.key === 't' || e.key === 'T') {
-      toggleTimer();
     } else if (e.key === 'Home') {
       go(0);
     } else if (e.key === 'End') {
@@ -604,44 +607,6 @@
     }
   });
 
-  // 5 分钟计时器
-  const timerEl = document.getElementById('timer');
-  let timerStart = null, timerPaused = 0, timerRunning = false, timerRAF = null;
-  const TARGET = 5 * 60 * 1000;
-  function fmt(ms) {
-    const total = Math.max(0, Math.floor(ms / 1000));
-    const m = String(Math.floor(total / 60)).padStart(2, '0');
-    const s = String(total % 60).padStart(2, '0');
-    return m + ':' + s;
-  }
-  function tick() {
-    const now = Date.now();
-    const elapsed = now - timerStart + timerPaused;
-    timerEl.textContent = fmt(elapsed) + ' / 05:00';
-    if (elapsed > TARGET) {
-      timerEl.style.background = 'rgba(232,122,111,.85)';
-      timerEl.style.color = '#fff';
-    }
-    timerRAF = requestAnimationFrame(tick);
-  }
-  function toggleTimer() {
-    if (!timerRunning) {
-      timerStart = Date.now();
-      timerRunning = true;
-      tick();
-    } else {
-      timerPaused += Date.now() - timerStart;
-      timerRunning = false;
-      cancelAnimationFrame(timerRAF);
-    }
-  }
-  timerEl.addEventListener('click', toggleTimer);
-  timerEl.addEventListener('dblclick', () => {
-    timerPaused = 0; timerRunning = false; cancelAnimationFrame(timerRAF);
-    timerEl.textContent = '00:00 / 05:00';
-    timerEl.style.background = '';
-    timerEl.style.color = '';
-  });
 </script>
 </body>
 </html>
