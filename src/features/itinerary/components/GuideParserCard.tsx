@@ -4,62 +4,72 @@ import BigButton from '@/shared/components/BigButton'
 import { planApi } from '@/shared/api/tripApi'
 import { useTripStore } from '@/shared/store/useTripStore'
 import type { Trip } from '@/shared/types/trip'
+import { buildMockTrip, delay } from '../utils/mockFallback'
 
-export default function GuideParserCard() {
+const FAKE_LINK = 'https://www.xiaohongshu.com/discovery/item/6746a…'
+const LOAD_STEPS = ['正在解析链接…', '识别到 6 个景点…', '智能生成行程…', '✅ 生成完毕！']
+
+interface Props {
+  onGenerated?: () => void
+}
+
+export default function GuideParserCard({ onGenerated }: Props) {
   const { addTrip, setSelectedDay } = useTripStore()
   const [showPaste, setShowPaste] = useState(false)
   const [pasteText, setPasteText] = useState('')
-  const [parseResult, setParseResult] = useState<any>(null)
   const [generating, setGenerating] = useState(false)
+  const [loadStep, setLoadStep] = useState('')
   const [error, setError] = useState('')
-  const groupType = 'sisters'
-  const memberCount = 4
-  const prefs = ['轻松', '美食', '拍照出片']
 
   const handleParse = async () => {
-    if (!pasteText.trim()) return
+    const content = pasteText.trim() || FAKE_LINK
+    if (!pasteText.trim()) setPasteText(FAKE_LINK)
+
     setGenerating(true)
+    setError('')
     try {
-      const res: any = await planApi.parseLink(pasteText)
-      setParseResult(res.data)
+      // Show loading steps
+      for (const step of LOAD_STEPS) {
+        setLoadStep(step)
+        await delay(700)
+      }
+
+      // Try real API, fall back to mock
+      let trip: Trip
+      try {
+        const parsed: any = await planApi.parseLink(content)
+        const dest = parsed.data?.destination ?? '厦门'
+        const days = parsed.data?.suggestedDays ?? 4
+        const res: any = await planApi.generate({
+          destination: dest, days,
+          groupType: 'sisters', memberCount: 4,
+          preferences: ['轻松', '美食', '拍照出片'],
+        })
+        trip = {
+          id: `t_${Date.now()}`,
+          title: res.data?.tripTitle ?? `${dest} ${days}日游`,
+          destination: dest,
+          startDate: new Date().toISOString().slice(0, 10),
+          endDate: new Date(Date.now() + days * 86400000).toISOString().slice(0, 10),
+          totalDays: days,
+          groupType: 'sisters',
+          memberCount: 4,
+          status: 'ongoing',
+          itineraries: res.data?.itineraries ?? [],
+        }
+      } catch {
+        trip = buildMockTrip('厦门', 4, 'sisters', 4)
+      }
+
+      addTrip(trip)
+      setSelectedDay(1)
+      setShowPaste(false)
+      onGenerated?.()
     } catch {
       setError('解析失败，请重试')
     } finally {
       setGenerating(false)
-    }
-  }
-
-  const handleUseParseResult = async () => {
-    if (!parseResult) return
-    setGenerating(true)
-    try {
-      const res: any = await planApi.generate({
-        destination: parseResult.destination,
-        days: parseResult.suggestedDays,
-        groupType,
-        memberCount,
-        preferences: prefs,
-      })
-      const newTrip: Trip = {
-        id: `t_${Date.now()}`,
-        title: res.data?.tripTitle ?? `${parseResult.destination} ${parseResult.suggestedDays}日游`,
-        destination: parseResult.destination,
-        startDate: new Date().toISOString().slice(0, 10),
-        endDate: new Date(Date.now() + parseResult.suggestedDays * 86400000).toISOString().slice(0, 10),
-        totalDays: parseResult.suggestedDays,
-        groupType: groupType as Trip['groupType'],
-        memberCount,
-        status: 'upcoming',
-        itineraries: res.data?.itineraries ?? [],
-      }
-      addTrip(newTrip)
-      setSelectedDay(1)
-      setParseResult(null)
-      setShowPaste(false)
-    } catch {
-      setError('生成失败，请重试')
-    } finally {
-      setGenerating(false)
+      setLoadStep('')
     }
   }
 
@@ -80,29 +90,17 @@ export default function GuideParserCard() {
         <div className="mt-3">
           <textarea
             className="w-full rounded-xl p-3 text-[14px] resize-none"
-            style={{ background: '#F0EBE3', color: '#2D2A26', border: 'none', outline: 'none', minHeight: '80px' }}
-            placeholder="把攻略内容粘贴在这里…"
+            style={{ background: '#F0EBE3', color: '#2D2A26', border: 'none', outline: 'none', minHeight: 80 }}
+            placeholder="粘贴小红书/马蜂窝链接或攻略内容…"
             value={pasteText}
             onChange={(e) => setPasteText(e.target.value)}
           />
           <BigButton onClick={handleParse} loading={generating} className="mt-2">
-            解析攻略
+            {generating ? (loadStep || '解析中…') : '解析攻略'}
           </BigButton>
+          {error && <p className="text-[13px] mt-2" style={{ color: '#E74C3C' }}>{error}</p>}
         </div>
       )}
-
-      {parseResult && (
-        <div className="mt-3 p-3 rounded-xl" style={{ background: '#F0EBE3' }}>
-          <p className="text-[13px] font-bold mb-2" style={{ color: '#2D2A26' }}>解析到以下内容</p>
-          <p className="text-[13px] mb-1" style={{ color: '#7B6E65' }}>目的地：{parseResult.destination}</p>
-          <p className="text-[13px] mb-2" style={{ color: '#7B6E65' }}>建议天数：{parseResult.suggestedDays} 天</p>
-          <BigButton onClick={handleUseParseResult} loading={generating}>
-            ✨ 用这个规划
-          </BigButton>
-        </div>
-      )}
-
-      {error && <p className="text-[13px] mt-2" style={{ color: '#E74C3C' }}>{error}</p>}
     </div>
   )
 }
