@@ -1,6 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { mockTranscribe } from '../services/mockChat'
-
 interface RecordingResult {
   /** 真识别结果，识别失败时落到 mockTranscribe(durationMs) */
   transcript: string
@@ -8,7 +6,7 @@ interface RecordingResult {
 }
 
 interface VoiceRecordingApi {
-  /** 永远 true：webkitSpeechRecognition 不可用时仍可走 mock */
+  /** 浏览器是否支持 webkitSpeechRecognition / SpeechRecognition */
   supported: boolean
   recording: boolean
   durationMs: number
@@ -46,9 +44,9 @@ interface SRInstance {
 type SRConstructor = new () => SRInstance
 
 /**
- * 微信风格的"按住录音"hook，整合真识别：
- * - 浏览器支持 webkitSpeechRecognition → 实时识别，松开拿到 final transcript
- * - 不支持（如 Firefox / 部分 iOS Safari）→ 按时长 mockTranscribe 兜底
+ * 微信风格的"按住录音"hook（仅真识别）。
+ * - 支持 SpeechRecognition → 实时识别，松开拿到 final transcript
+ * - 不支持则返回 supported=false，由上层禁用录音入口
  */
 export function useVoiceRecording(): VoiceRecordingApi {
   const recognitionRef = useRef<SRInstance | null>(null)
@@ -69,6 +67,8 @@ export function useVoiceRecording(): VoiceRecordingApi {
         (window as unknown as { webkitSpeechRecognition?: SRConstructor }).webkitSpeechRecognition ??
         null)
       : null
+
+  const supported = SR !== null
 
   const cleanup = useCallback(() => {
     if (tickRef.current !== null) {
@@ -93,10 +93,7 @@ export function useVoiceRecording(): VoiceRecordingApi {
       setDurationMs(Date.now() - startedAtRef.current)
     }, 100)
 
-    if (!SR) {
-      recognitionRef.current = null
-      return
-    }
+    if (!SR) return
     try {
       const recognition = new SR()
       recognition.lang = 'zh-CN'
@@ -127,8 +124,11 @@ export function useVoiceRecording(): VoiceRecordingApi {
         }
         const dur = Date.now() - startedAtRef.current
         const recognized = (finalRef.current || interimRef.current).trim()
-        const transcript = recognized || mockTranscribe(dur)
-        resolve({ transcript, durationMs: dur })
+        if (!recognized) {
+          resolve(null)
+          return
+        }
+        resolve({ transcript: recognized, durationMs: dur })
       }
       recognitionRef.current = recognition
       recognition.start()
@@ -140,7 +140,6 @@ export function useVoiceRecording(): VoiceRecordingApi {
   const stop = useCallback((): Promise<RecordingResult | null> => {
     return new Promise((resolve) => {
       if (!recording) { resolve(null); return }
-      const dur = Date.now() - startedAtRef.current
       const recognition = recognitionRef.current
 
       if (recognition) {
@@ -148,11 +147,11 @@ export function useVoiceRecording(): VoiceRecordingApi {
         try { recognition.stop() } catch {
           pendingResolveRef.current = null
           cleanup()
-          resolve({ transcript: mockTranscribe(dur), durationMs: dur })
+          resolve(null)
         }
       } else {
         cleanup()
-        resolve({ transcript: mockTranscribe(dur), durationMs: dur })
+        resolve(null)
       }
     })
   }, [recording, cleanup])
@@ -178,5 +177,5 @@ export function useVoiceRecording(): VoiceRecordingApi {
     }
   }, [cleanup])
 
-  return { supported: true, recording, durationMs, interimText, start, stop, cancel }
+  return { supported, recording, durationMs, interimText, start, stop, cancel }
 }

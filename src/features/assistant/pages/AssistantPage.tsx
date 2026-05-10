@@ -3,11 +3,14 @@ import { ROUTES } from '@/shared/constants/routes'
 import AssistantHeader from '../components/AssistantHeader'
 import BigVoiceButton from '../components/BigVoiceButton'
 import SuggestedQuestions from '../components/SuggestedQuestions'
+import { unlockTTS } from '../services/ttsUnlock'
 
 export default function AssistantPage() {
   const navigate = useNavigate()
 
   const goVoiceCall = (prefilled?: string) => {
+    // 在用户手势同步栈内 unlock 语音播放，否则进通话页后 AI 朗读会被浏览器拦截
+    unlockTTS()
     navigate(ROUTES.VOICE_CALL, { state: prefilled ? { question: prefilled } : undefined })
   }
 

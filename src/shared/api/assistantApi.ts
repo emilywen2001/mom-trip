@@ -10,6 +10,7 @@ export const assistantApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message, context, history }),
     })
+    if (!response.ok) throw new Error(`backend ${response.status}`)
     const reader = response.body?.getReader()
     const decoder = new TextDecoder()
     let full = ''
