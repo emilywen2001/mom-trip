@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>妈妈的旅行小助手 · 路演 PPT</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+                 "Microsoft YaHei", sans-serif;
+    color: #2D2A26;
+    background: #1a1410;
+  }
+
+  /* ---------- Stage ---------- */
+  .stage {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .slide {
+    position: absolute; inset: 0;
+    display: none;
+    flex-direction: column;
+    padding: 64px 80px;
+    background: #FAF7F2;
+    overflow: hidden;
+  }
+  .slide.active { display: flex; animation: fade .35s ease; }
+  @keyframes fade {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ---------- 通用文字 ---------- */
+  h1 { font-size: 64px; font-weight: 800; letter-spacing: -1px; }
+  h2 { font-size: 44px; font-weight: 800; margin-bottom: 28px; letter-spacing: -.5px; }
+  h3 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+  p  { font-size: 20px; line-height: 1.65; color: #5C5048; }
+  .eyebrow {
+    display: inline-block;
+    font-size: 14px; font-weight: 700; letter-spacing: 2px;
+    padding: 6px 14px; border-radius: 999px;
+    background: #FFE8D4; color: #C8633A;
+    margin-bottom: 24px;
+  }
+
+  /* ---------- 封面/结尾：橙色渐变 ---------- */
+  .slide-hero {
+    background:
+      radial-gradient(circle at 20% 20%, #FFB88C 0%, transparent 55%),
+      radial-gradient(circle at 80% 80%, #FFCAA0 0%, transparent 50%),
+      linear-gradient(160deg, #E8A87C 0%, #C8633A 100%);
+    color: #fff;
+    justify-content: center; align-items: center; text-align: center;
+  }
+  .slide-hero h1 { color: #fff; font-size: 88px; }
+  .slide-hero p  { color: rgba(255,255,255,.92); font-size: 24px; margin-top: 20px; }
+  .hero-tag {
+    background: rgba(255,255,255,.2); color: #fff;
+    border: 1.5px solid rgba(255,255,255,.55);
+    padding: 8px 18px; border-radius: 999px;
+    font-size: 16px; letter-spacing: 4px; margin-bottom: 32px;
+    backdrop-filter: blur(6px);
+  }
+  .hero-meta {
+    margin-top: 56px;
+    display: flex; gap: 36px;
+    color: rgba(255,255,255,.85); font-size: 16px;
+  }
+  .hero-meta span::before { content: "·"; margin-right: 12px; opacity: .6; }
+  .hero-meta span:first-child::before { content: ""; margin: 0; }
+
+  /* ---------- 痛点 ---------- */
+  .pains {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+    margin-top: 16px;
+  }
+  .pain {
+    background: #fff; border-radius: 22px; padding: 28px 30px;
+    border: 1px solid #F0EBE3;
+    box-shadow: 0 2px 10px rgba(200,99,58,.04);
+  }
+  .pain .num {
+    display: inline-block; width: 36px; height: 36px; line-height: 36px;
+    text-align: center; border-radius: 12px;
+    background: linear-gradient(135deg,#FFD4B0,#E8A87C);
+    color: #fff; font-weight: 800; font-size: 18px; margin-bottom: 14px;
+  }
+  .pain h3 { color: #2D2A26; font-size: 20px; }
+  .pain p  { font-size: 16px; color: #7B6E65; }
+
+  /* ---------- 五模块 ---------- */
+  .modules {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px;
+    margin-top: 12px;
+  }
+  .module {
+    background: #fff; border-radius: 20px;
+    padding: 26px 18px; text-align: center;
+    border: 1px solid #F0EBE3;
+  }
+  .module .ico {
+    font-size: 38px; margin-bottom: 12px; display: block;
+  }
+  .module.owner {
+    background: linear-gradient(160deg, #FFE8D4 0%, #FFD4B0 100%);
+    border-color: #E8A87C;
+    box-shadow: 0 6px 20px rgba(200,99,58,.18);
+    transform: translateY(-4px);
+  }
+  .module h3 { font-size: 17px; }
+  .module p  { font-size: 13px; color: #8B7355; }
+  .module .me {
+    display: inline-block; margin-top: 10px;
+    font-size: 11px; font-weight: 700; letter-spacing: 1px;
+    background: #C8633A; color: #fff;
+    padding: 3px 10px; border-radius: 999px;
+  }
+
+  /* ---------- Demo 页布局：左文 / 右视频 ---------- */
+  .demo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 56px;
+    flex: 1; align-items: center;
+  }
+  .demo-grid.center { grid-template-columns: 1fr 1fr; gap: 48px; }
+  .demo-text .points {
+    list-style: none; margin-top: 20px;
+  }
+  .demo-text .points li {
+    font-size: 19px; line-height: 1.7; color: #4A3520;
+    padding-left: 28px; position: relative; margin-bottom: 10px;
+  }
+  .demo-text .points li::before {
+    content: "✓"; position: absolute; left: 0; top: 0;
+    width: 22px; height: 22px; line-height: 22px; text-align: center;
+    background: #FFE8D4; color: #C8633A; border-radius: 6px;
+    font-size: 13px; font-weight: 700;
+  }
+
+  /* 视频区 */
+  .video-frame {
+    position: relative;
+    background: #1a1410;
+    border-radius: 28px;
+    overflow: hidden;
+    aspect-ratio: 9 / 16;
+    max-height: 560px;
+    margin: 0 auto;
+    box-shadow: 0 20px 60px rgba(200,99,58,.25), 0 4px 14px rgba(0,0,0,.12);
+    border: 8px solid #2D2A26;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .video-frame.wide {
+    aspect-ratio: 16 / 10;
+    max-height: 480px;
+    border-width: 10px;
+    border-radius: 22px;
+  }
+  .video-frame video,
+  .video-frame img {
+    width: 100%; height: 100%; object-fit: cover;
+    display: block;
+  }
+  .video-placeholder {
+    color: rgba(255,255,255,.7);
+    text-align: center; padding: 24px;
+    display: flex; flex-direction: column; gap: 14px; align-items: center;
+  }
+  .video-placeholder .badge {
+    font-size: 12px; letter-spacing: 3px;
+    color: #FFCAA0;
+    border: 1px solid rgba(255,202,160,.4);
+    padding: 5px 12px; border-radius: 999px;
+  }
+  .video-placeholder .tip {
+    font-size: 16px; color: rgba(255,255,255,.55);
+    line-height: 1.6;
+  }
+  .video-placeholder .icon {
+    font-size: 56px; opacity: .55;
+  }
+  .video-caption {
+    text-align: center; font-size: 13px; color: #B5A696;
+    margin-top: 10px; letter-spacing: 1px;
+  }
+
+  /* AI 助手页：放大视频区 */
+  .demo-grid.ai .video-frame { max-height: 600px; }
+  .demo-grid.ai .demo-text h2 { font-size: 48px; }
+  .ai-highlight {
+    display: inline-block;
+    background: linear-gradient(135deg,#E8A87C,#C8633A);
+    color: #fff; padding: 8px 16px; border-radius: 12px;
+    font-size: 14px; font-weight: 700; letter-spacing: 1px;
+    margin-bottom: 20px;
+  }
+
+  /* ---------- 架构页 ---------- */
+  .arch {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 36px;
+    flex: 1; align-items: stretch;
+  }
+  .arch-box {
+    background: #fff; border-radius: 22px; padding: 30px 32px;
+    border: 1px solid #F0EBE3;
+  }
+  .arch-box h3 { font-size: 22px; color: #C8633A; margin-bottom: 18px; }
+  .arch-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 0; border-bottom: 1px dashed #F0EBE3;
+    font-size: 16px; color: #4A3520;
+  }
+  .arch-row:last-child { border-bottom: 0; }
+  .arch-row code {
+    background: #FAF7F2; padding: 3px 9px; border-radius: 6px;
+    font-size: 14px; color: #C8633A;
+  }
+  .arch-tag {
+    display: inline-block; min-width: 56px; text-align: center;
+    background: #FFE8D4; color: #C8633A;
+    padding: 4px 10px; border-radius: 8px;
+    font-size: 12px; font-weight: 700; letter-spacing: 1px;
+  }
+  .arch-team {
+    margin-top: 20px;
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+  }
+  .team-item {
+    background: #FAF7F2; padding: 10px 14px; border-radius: 10px;
+    font-size: 14px; color: #5C5048;
+  }
+  .team-item.mine {
+    background: linear-gradient(135deg,#FFE8D4,#FFD4B0);
+    color: #C8633A; font-weight: 700;
+  }
+
+  /* ---------- 结尾 ---------- */
+  .slide-end .quote {
+    font-size: 56px; font-weight: 800; line-height: 1.4;
+    color: #fff; max-width: 880px; text-align: center;
+    letter-spacing: 1px;
+  }
+  .slide-end .sign {
+    margin-top: 32px; font-size: 18px; color: rgba(255,255,255,.8);
+    letter-spacing: 6px;
+  }
+
+  /* ---------- 底部控件 ---------- */
+  .chrome {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 28px;
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,.18));
+    pointer-events: none;
+  }
+  .chrome > * { pointer-events: auto; }
+  .dots { display: flex; gap: 8px; }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(255,255,255,.35);
+    cursor: pointer; transition: all .2s;
+  }
+  .dot.active {
+    background: #fff; width: 24px; border-radius: 4px;
+  }
+  .slide:not(.slide-hero):not(.slide-end) ~ .chrome .dot { background: rgba(45,42,38,.25); }
+  .pageinfo {
+    font-size: 12px; color: rgba(255,255,255,.7);
+    letter-spacing: 2px;
+  }
+  .timer {
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    color: rgba(255,255,255,.85);
+    background: rgba(0,0,0,.35);
+    padding: 6px 12px; border-radius: 999px;
+    letter-spacing: 1px;
+    backdrop-filter: blur(6px);
+    cursor: pointer; user-select: none;
+  }
+
+  /* 内页（白底）时调整 chrome 颜色 */
+  body.light-chrome .dot { background: rgba(45,42,38,.25); }
+  body.light-chrome .dot.active { background: #C8633A; }
+  body.light-chrome .pageinfo { color: #B5A696; }
+  body.light-chrome .timer { background: rgba(45,42,38,.08); color: #5C5048; }
+
+  /* 角标：脚注 */
+  .footnote {
+    position: absolute; left: 80px; bottom: 56px;
+    font-size: 12px; color: #B5A696; letter-spacing: 1px;
+  }
+
+  /* 帮助层 */
+  .help {
+    position: fixed; right: 16px; top: 16px;
+    background: rgba(0,0,0,.5); color: #fff;
+    padding: 8px 14px; border-radius: 999px;
+    font-size: 12px; letter-spacing: 1px;
+    backdrop-filter: blur(6px);
+    user-select: none; cursor: default;
+    opacity: .55; transition: opacity .2s;
+  }
+  .help:hover { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+
+  <!-- ============ 1 · 封面 ============ -->
+  <section class="slide slide-hero" data-chrome="dark">
+    <div class="hero-tag">M O M &nbsp;·&nbsp; T R I P</div>
+    <h1>妈妈的旅行小助手</h1>
+    <p>一个全程陪着妈妈的 AI 旅行助手</p>
+    <div class="hero-meta">
+      <span>5 分钟路演</span>
+      <span>2026 春季</span>
+      <span>4 人协作 · feature-first</span>
+    </div>
+  </section>
+
+  <!-- ============ 2 · 背景 / 痛点 ============ -->
+  <section class="slide" data-chrome="light">
+    <div class="eyebrow">为什么要做这个</div>
+    <h2>第一次自己出远门的妈妈,<br/>真的不容易</h2>
+    <div class="pains">
+      <div class="pain">
+        <span class="num">1</span>
+        <h3>不会规划</h3>
+        <p>跟团太累、自由行不知从哪开始,孩子不在身边没人帮看攻略</p>
+      </div>
+      <div class="pain">
+        <span class="num">2</span>
+        <h3>语言/认路怕被坑</h3>
+        <p>看不懂菜单、问路尴尬、打车不敢确认价格</p>
+      </div>
+      <div class="pain">
+        <span class="num">3</span>
+        <h3>拍照不会修</h3>
+        <p>想留下好看的纪念,但姿势、构图、滤镜都不熟</p>
+      </div>
+      <div class="pain">
+        <span class="num">4</span>
+        <h3>问孩子怕烦</h3>
+        <p>一点小事都问太麻烦,自己又怕踩坑</p>
+      </div>
+    </div>
+    <div class="footnote">→ 我们想做的:把"会陪伴的子女"装进她手机里</div>
+  </section>
+
+  <!-- ============ 3 · 产品定位 + 5 模块 ============ -->
+  <section class="slide" data-chrome="light">
+    <div class="eyebrow">产品形态</div>
+    <h2>不是地图,不是 OTA,<br/>是一个"全程陪着"的小助手</h2>
+    <p style="margin-bottom: 36px; max-width: 760px;">
+      一个移动端 H5,把<strong>行前规划 → 当日导览 → 拍照留念 → 语音陪聊</strong>串成一条线。
+      下面 5 个模块,对应 5 个 Tab。
+    </p>
+    <div class="modules">
+      <div class="module">
+        <span class="ico">🏠</span>
+        <h3>首页</h3>
+        <p>今日进度 · 天气 · 穿搭</p>
+      </div>
+      <div class="module">
+        <span class="ico">🗺️</span>
+        <h3>行程</h3>
+        <p>每日时间轴 · AI 规划</p>
+      </div>
+      <div class="module">
+        <span class="ico">📷</span>
+        <h3>拍照</h3>
+        <p>姿势引导 · 滤镜</p>
+      </div>
+      <div class="module owner">
+        <span class="ico">💬</span>
+        <h3>AI 助手</h3>
+        <p>语音通话 · 流式问答</p>
+        <span class="me">我负责</span>
+      </div>
+      <div class="module">
+        <span class="ico">👤</span>
+        <h3>我的</h3>
+        <p>统计 · 安全设置</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 4 · Demo 1 · 首页 + 行程 ============ -->
+  <section class="slide" data-chrome="light">
+    <div class="demo-grid">
+      <div class="demo-text">
+        <div class="eyebrow">DEMO · 1</div>
+        <h2>打开 App,妈妈一眼<br/>看到"今天该干嘛"</h2>
+        <ul class="points">
+          <li>顶部 Day 2/5 进度,大字号、暖色调</li>
+          <li>今日天气 + AI 推荐穿搭(可点开看完整搭配)</li>
+          <li>今日时间轴:几点出门、几点吃饭</li>
+          <li>跳转行程页:整趟旅行 AI 一键规划</li>
+        </ul>
+      </div>
+      <div>
+        <div class="video-frame" data-video="home">
+          <!-- 现场:替换成 <video src="./videos/demo-home.mp4" autoplay muted loop playsinline></video> -->
+          <div class="video-placeholder">
+            <span class="badge">VIDEO 1 / 3</span>
+            <div class="icon">🎬</div>
+            <div class="tip">首页 + 行程页演示位<br/>录屏 9:16 / 现场投屏</div>
+          </div>
+        </div>
+        <div class="video-caption">~ 50 秒 · 首页 → 行程页</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 5 · Demo 2 · 拍照 ============ -->
+  <section class="slide" data-chrome="light">
+    <div class="demo-grid">
+      <div>
+        <div class="video-frame" data-video="camera">
+          <div class="video-placeholder">
+            <span class="badge">VIDEO 2 / 3</span>
+            <div class="icon">📸</div>
+            <div class="tip">全屏相机 + 姿势引导<br/>+ 热门滤镜</div>
+          </div>
+        </div>
+        <div class="video-caption">~ 50 秒 · 拍照页</div>
+      </div>
+      <div class="demo-text">
+        <div class="eyebrow">DEMO · 2</div>
+        <h2>给妈妈一个<br/>"会拍照的女儿"</h2>
+        <ul class="points">
+          <li>全屏相机,无需切换 App</li>
+          <li>姿势引导贴纸:对准就是好看</li>
+          <li>一键热门滤镜,出片即发圈</li>
+          <li>右侧功能栏:翻转、闪光、相册一步到位</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 6 · Demo 3 · AI 助手 (重头戏) ============ -->
+  <section class="slide" data-chrome="light">
+    <div class="demo-grid ai">
+      <div class="demo-text">
+        <span class="ai-highlight">⭐ 高 潮 段</span>
+        <h2>按住麦克风,<br/>跟"小桥"说句话</h2>
+        <ul class="points">
+          <li>右下浮窗常驻,任何页面都能呼出</li>
+          <li>语音通话页:AI 形象 + 实时字幕</li>
+          <li>"明天清迈古城穿什么?" → 流式回答 + TTS 朗读</li>
+          <li>支持文字输入兜底,长辈不熟悉也不慌</li>
+        </ul>
+        <p style="margin-top:22px; font-size:14px; color:#8B7355;">
+          现场建议提问:<br/>
+          <strong style="color:#C8633A;">"小桥,明天去清迈古城穿什么合适?"</strong>
+        </p>
+      </div>
+      <div>
+        <div class="video-frame" data-video="assistant">
+          <div class="video-placeholder">
+            <span class="badge">VIDEO 3 / 3 · 主</span>
+            <div class="icon">🎙️</div>
+            <div class="tip">AI 语音通话页演示位<br/>建议 60-80 秒,展示完整一问一答</div>
+          </div>
+        </div>
+        <div class="video-caption">~ 70 秒 · 浮窗 → 语音通话 → AI 回答</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 7 · 技术架构 + 团队 ============ -->
+  <section class="slide" data-chrome="light">
+    <div class="eyebrow">技术亮点</div>
+    <h2>30 秒讲清楚怎么做的</h2>
+    <div class="arch">
+      <div class="arch-box">
+        <h3>架构 · feature-first</h3>
+        <div class="arch-row">
+          <span class="arch-tag">前端</span>
+          <span>React + TypeScript + Vite + Tailwind</span>
+        </div>
+        <div class="arch-row">
+          <span class="arch-tag">后端</span>
+          <span>Python FastAPI · SSE 流式</span>
+        </div>
+        <div class="arch-row">
+          <span class="arch-tag">大模型</span>
+          <span>智谱 GLM 流式回答</span>
+        </div>
+        <div class="arch-row">
+          <span class="arch-tag">语音</span>
+          <span>Web Speech API · 已预留豆包 ASR/TTS</span>
+        </div>
+        <div class="arch-row">
+          <span class="arch-tag">天气</span>
+          <span>OpenWeather · 无 key 走 Mock</span>
+        </div>
+      </div>
+      <div class="arch-box">
+        <h3>团队 · 4 人并行</h3>
+        <p style="font-size:15px; margin-bottom:8px;">每人负责一个 feature 目录,
+          shared 层共用,互不踩脚。</p>
+        <div class="arch-team">
+          <div class="team-item">🏠 home / 首页</div>
+          <div class="team-item">🗺️ itinerary / 行程</div>
+          <div class="team-item">📷 camera / 拍照</div>
+          <div class="team-item mine">💬 assistant / AI 助手 (我)</div>
+        </div>
+        <div style="margin-top:22px; padding:14px 16px; background:#FAF7F2; border-radius:12px;
+                    font-size:14px; color:#7B6E65; line-height:1.6;">
+          <strong style="color:#C8633A;">为什么这套架构能并行:</strong><br/>
+          每个 feature 独立有 pages / components / hooks / services,
+          只通过 shared/store 共享状态,合并几乎无冲突。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 8 · 结尾 ============ -->
+  <section class="slide slide-hero slide-end" data-chrome="dark">
+    <div class="quote">
+      "我们想做的不是工具,<br/>
+      是替子女说一句——<br/>
+      <span style="color:#FFE8D4;">妈,路上有人陪你。"</span>
+    </div>
+    <div class="sign">M O M · T R I P &nbsp;&nbsp;|&nbsp;&nbsp; 谢 谢 聆 听</div>
+  </section>
+
+</div>
+
+<!-- 底部控件 -->
+<div class="chrome">
+  <div class="pageinfo"><span id="page-cur">1</span> / <span id="page-total">8</span></div>
+  <div class="dots" id="dots"></div>
+  <div class="timer" id="timer" title="点击开始/暂停 5 分钟计时">00:00 / 05:00</div>
+</div>
+
+<div class="help">← → 切页 &nbsp;·&nbsp; 数字键直达 &nbsp;·&nbsp; F 全屏 &nbsp;·&nbsp; T 计时</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const dotsBox = document.getElementById('dots');
+  const pageCur = document.getElementById('page-cur');
+  const pageTotal = document.getElementById('page-total');
+  pageTotal.textContent = slides.length;
+
+  // 初始化圆点
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    d.addEventListener('click', () => go(i));
+    dotsBox.appendChild(d);
+  });
+  const dots = dotsBox.querySelectorAll('.dot');
+
+  let cur = 0;
+  function go(i) {
+    if (i < 0 || i >= slides.length) return;
+    slides[cur].classList.remove('active');
+    dots[cur].classList.remove('active');
+    cur = i;
+    slides[cur].classList.add('active');
+    dots[cur].classList.add('active');
+    pageCur.textContent = cur + 1;
+    document.body.classList.toggle('light-chrome',
+      slides[cur].dataset.chrome === 'light');
+  }
+  go(0);
+
+  // 键盘
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+      e.preventDefault(); go(cur + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+      e.preventDefault(); go(cur - 1);
+    } else if (/^[1-9]$/.test(e.key)) {
+      go(parseInt(e.key, 10) - 1);
+    } else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    } else if (e.key === 't' || e.key === 'T') {
+      toggleTimer();
+    } else if (e.key === 'Home') {
+      go(0);
+    } else if (e.key === 'End') {
+      go(slides.length - 1);
+    }
+  });
+
+  // 5 分钟计时器
+  const timerEl = document.getElementById('timer');
+  let timerStart = null, timerPaused = 0, timerRunning = false, timerRAF = null;
+  const TARGET = 5 * 60 * 1000;
+  function fmt(ms) {
+    const total = Math.max(0, Math.floor(ms / 1000));
+    const m = String(Math.floor(total / 60)).padStart(2, '0');
+    const s = String(total % 60).padStart(2, '0');
+    return m + ':' + s;
+  }
+  function tick() {
+    const now = Date.now();
+    const elapsed = now - timerStart + timerPaused;
+    timerEl.textContent = fmt(elapsed) + ' / 05:00';
+    if (elapsed > TARGET) {
+      timerEl.style.background = 'rgba(232,122,111,.85)';
+      timerEl.style.color = '#fff';
+    }
+    timerRAF = requestAnimationFrame(tick);
+  }
+  function toggleTimer() {
+    if (!timerRunning) {
+      timerStart = Date.now();
+      timerRunning = true;
+      tick();
+    } else {
+      timerPaused += Date.now() - timerStart;
+      timerRunning = false;
+      cancelAnimationFrame(timerRAF);
+    }
+  }
+  timerEl.addEventListener('click', toggleTimer);
+  timerEl.addEventListener('dblclick', () => {
+    timerPaused = 0; timerRunning = false; cancelAnimationFrame(timerRAF);
+    timerEl.textContent = '00:00 / 05:00';
+    timerEl.style.background = '';
+    timerEl.style.color = '';
+  });
+</script>
+</body>
+</html>
