@@ -1,144 +1,108 @@
-import { useState, useRef } from 'react'
-import { Camera, Image, Film } from 'lucide-react'
-import BigButton from '@/shared/components/BigButton'
-import { mediaApi } from '@/shared/api/mediaApi'
-import { useTripStore } from '@/shared/store/useTripStore'
+import { useEffect, useState } from 'react'
 import CameraPreview from '../components/CameraPreview'
-import CaptureButton from '../components/CaptureButton'
-import TripGallery from '../components/TripGallery'
+import RightBar from '../components/RightBar'
+import BottomControls from '../components/BottomControls'
+import PosePanel from '../panels/PosePanel'
+import FilterPanel from '../panels/FilterPanel'
+import { useCamera } from '../hooks/useCamera'
+import { usePose } from '../hooks/usePose'
+import { useFilter } from '../hooks/useFilter'
 
-const tabs = [
-  { key: 'shoot',   icon: Camera, label: '拍摄' },
-  { key: 'gallery', icon: Image,  label: '相册' },
-  { key: 'video',   icon: Film,   label: '视频' },
-] as const
-
-type TabKey = typeof tabs[number]['key']
+type ActivePanel = 'pose' | 'filter' | null
+type CameraMode = 'photo' | 'video'
 
 export default function CameraPage() {
-  const { currentTrip } = useTripStore()
-  const [tab, setTab] = useState<TabKey>('shoot')
-  const [cameraActive, setCameraActive] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [lastPhoto, setLastPhoto] = useState<string | null>(null)
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const streamRef = useRef<MediaStream | null>(null)
+  const camera = useCamera()
+  const pose = usePose()
+  const filter = useFilter()
+  const [activePanel, setActivePanel] = useState<ActivePanel>(null)
+  const [mode, setMode] = useState<CameraMode>('photo')
 
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-      streamRef.current = stream
-      if (videoRef.current) videoRef.current.srcObject = stream
-      setCameraActive(true)
-    } catch {
-      alert('无法访问摄像头，请检查权限设置')
+  // Auto-start camera on mount, cleanup on unmount
+  useEffect(() => {
+    camera.startCamera()
+    return () => { camera.stopCamera() }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleModeChange = (m: CameraMode) => {
+    if (m === mode) return
+    setMode(m)
+    // 切到视频模式时关闭姿势引导
+    if (m === 'video' && pose.isPoseActive) {
+      pose.togglePose()
+      setActivePanel(null)
     }
   }
 
-  const stopCamera = () => {
-    streamRef.current?.getTracks().forEach((t) => t.stop())
-    setCameraActive(false)
+  const togglePosePanel = () => {
+    if (activePanel === 'pose') {
+      setActivePanel(null)
+      // deactivate pose overlay too
+      if (pose.isPoseActive) pose.togglePose()
+    } else {
+      setActivePanel('pose')
+      // activate pose overlay if not already
+      if (!pose.isPoseActive) pose.togglePose()
+    }
   }
 
-  const takePhoto = async () => {
-    if (!videoRef.current) return
-    const canvas = document.createElement('canvas')
-    canvas.width = videoRef.current.videoWidth
-    canvas.height = videoRef.current.videoHeight
-    canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0)
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.8)
-    setLastPhoto(dataUrl)
-    navigator.vibrate?.(50)
-
-    setUploading(true)
-    try {
-      const blob = await fetch(dataUrl).then((r) => r.blob())
-      const form = new FormData()
-      form.append('file', blob, 'photo.jpg')
-      form.append('tripId', currentTrip?.id ?? 't_001')
-      form.append('mediaType', 'photo')
-      await mediaApi.upload(form)
-    } catch {
-      // silent fail in demo
-    } finally {
-      setUploading(false)
+  const toggleFilterPanel = () => {
+    if (activePanel === 'filter') {
+      setActivePanel(null)
+    } else {
+      setActivePanel('filter')
+      // close pose if open
+      if (pose.isPoseActive) pose.togglePose()
     }
   }
 
   return (
-    <div className="page-container" style={{ background: '#1A1A1A' }}>
-      {/* Tab bar */}
-      <div className="flex pt-12 px-4 pb-3 gap-2">
-        {tabs.map((t) => {
-          const Icon = t.icon
-          const active = tab === t.key
-          return (
-            <button
-              key={t.key}
-              onClick={() => { if (tab !== t.key) { stopCamera(); setTab(t.key) } }}
-              className="flex items-center gap-2 px-4 py-2 rounded-full text-[14px] font-semibold flex-1 justify-center"
-              style={{
-                background: active ? '#C8633A' : 'rgba(255,255,255,0.1)',
-                color: active ? 'white' : 'rgba(255,255,255,0.6)',
-              }}
-            >
-              <Icon size={16} />
-              {t.label}
-            </button>
-          )
-        })}
-      </div>
+    <div className="fixed inset-0 z-10" style={{ background: '#000' }}>
+      {/* Camera preview with all overlays */}
+      <CameraPreview
+        videoRef={camera.videoRef}
+        cameraActive={camera.cameraActive}
+        cssFilter={filter.computedCSSFilter}
+        isPoseActive={pose.isPoseActive}
+        selectedPose={pose.selectedPose}
+        lastPhoto={camera.lastPhoto}
+      />
 
-      {tab === 'shoot' && (
-        <div className="flex flex-col items-center">
-          <CameraPreview
-            cameraActive={cameraActive}
-            videoRef={videoRef}
-            lastPhoto={lastPhoto}
-          />
-          <CaptureButton
-            cameraActive={cameraActive}
-            uploading={uploading}
-            onStart={startCamera}
-            onCapture={takePhoto}
-          />
-          <p className="text-[12px] mt-3" style={{ color: 'rgba(255,255,255,0.4)' }}>
-            {cameraActive ? '点击圆圈拍照' : '点击圆圈开启相机'}
-          </p>
-        </div>
-      )}
+      {/* Right function bar */}
+      <RightBar
+        isPoseActive={pose.isPoseActive}
+        isFilterActive={activePanel === 'filter'}
+        onTogglePose={togglePosePanel}
+        onToggleFilter={toggleFilterPanel}
+      />
 
-      {tab === 'gallery' && <TripGallery />}
+      {/* Bottom controls */}
+      <BottomControls
+        mode={mode}
+        onModeChange={handleModeChange}
+        onCapture={camera.takePhoto}
+        onFlip={camera.flipCamera}
+        lastPhoto={camera.lastPhoto}
+        uploading={camera.uploading}
+      />
 
-      {tab === 'video' && (
-        <div className="px-4 flex flex-col items-center">
-          <div
-            className="w-full rounded-3xl flex flex-col items-center justify-center gap-4 my-8 p-8"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1.5px dashed rgba(255,255,255,0.2)' }}
-          >
-            <Film size={48} color="rgba(255,255,255,0.4)" />
-            <p className="text-[16px] font-semibold text-white text-center">旅行结束后，一键生成专属视频</p>
-            <p className="text-[13px] text-center" style={{ color: 'rgba(255,255,255,0.5)' }}>
-              AI 自动剪辑你的旅行照片，配上音乐，生成精美回忆视频
-            </p>
-          </div>
-          <div className="w-full space-y-3">
-            <p className="text-[13px] font-bold" style={{ color: 'rgba(255,255,255,0.6)' }}>选择风格</p>
-            <div className="grid grid-cols-2 gap-3">
-              {['🌅 温馨回忆', '🎉 活泼欢快'].map((s) => (
-                <button
-                  key={s}
-                  className="py-4 rounded-2xl text-[14px] font-semibold"
-                  style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-            <BigButton>✨ 生成旅行视频</BigButton>
-          </div>
-        </div>
-      )}
+      {/* Pose selection panel */}
+      <PosePanel
+        isOpen={activePanel === 'pose'}
+        selectedPoseId={pose.selectedPose.id}
+        onSelect={pose.selectPose}
+        onClose={() => { setActivePanel(null); if (pose.isPoseActive) pose.togglePose() }}
+      />
+
+      {/* Filter selection panel */}
+      <FilterPanel
+        isOpen={activePanel === 'filter'}
+        selectedFilterId={filter.selectedFilter.id}
+        filterIntensity={filter.filterIntensity}
+        onSelectFilter={filter.selectFilter}
+        onIntensityChange={filter.setFilterIntensity}
+        onClose={() => setActivePanel(null)}
+      />
     </div>
   )
 }

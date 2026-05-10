@@ -14,12 +14,18 @@ export default function BottomNav() {
   const navigate = useNavigate()
   const location = useLocation()
 
+  const isCameraPage = location.pathname === ROUTES.CAMERA
   const active = tabs.find((t) => t.path === location.pathname)?.key ?? 'home'
 
   return (
     <nav
-      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white border-t border-gray-100 z-50"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-50"
+      style={{
+        background: isCameraPage ? 'rgba(0,0,0,0.6)' : '#fff',
+        backdropFilter: isCameraPage ? 'blur(8px)' : 'none',
+        borderTop: isCameraPage ? 'none' : '1px solid #f0f0f0',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+      }}
     >
       <div className="flex items-center">
         {tabs.map((tab) => {
@@ -55,12 +61,12 @@ export default function BottomNav() {
             >
               <Icon
                 size={22}
-                color={isActive ? '#C8633A' : '#B5A696'}
+                color={isActive ? '#C8633A' : isCameraPage ? 'rgba(255,255,255,0.7)' : '#B5A696'}
                 strokeWidth={isActive ? 2.5 : 1.8}
               />
               <span
                 className="text-[10px] font-medium"
-                style={{ color: isActive ? '#C8633A' : '#B5A696' }}
+                style={{ color: isActive ? '#C8633A' : isCameraPage ? 'rgba(255,255,255,0.7)' : '#B5A696' }}
               >
                 {tab.label}
               </span>
