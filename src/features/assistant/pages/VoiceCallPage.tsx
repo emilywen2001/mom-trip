@@ -89,6 +89,7 @@ export default function VoiceCallPage() {
   }
 
   const handleRecordSubmit = async () => {
+    unlockTTS()
     const result = await recorder.stop()
     setShowSlideHint(false)
     setWillCancel(false)

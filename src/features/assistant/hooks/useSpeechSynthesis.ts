@@ -33,7 +33,15 @@ export function useSpeechSynthesis(): SpeechSynthesisApi {
   const speak: SpeechSynthesisApi['speak'] = useCallback(
     (text, opts) => {
       if (!supported || !text) return
+      try { window.speechSynthesis.resume() } catch { /* ignore */ }
       window.speechSynthesis.cancel()
+      if (!voiceRef.current) {
+        const voices = window.speechSynthesis.getVoices()
+        const female = voices.find(
+          (v) => v.lang.startsWith('zh') && (v.name.includes('Female') || v.name.includes('女'))
+        )
+        voiceRef.current = female || voices.find((v) => v.lang.startsWith('zh-CN')) || null
+      }
       const utter = new SpeechSynthesisUtterance(text)
       utter.lang = 'zh-CN'
       utter.rate = 0.95
