@@ -3,6 +3,7 @@ import type { PointerEvent as ReactPointerEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Trash2 } from 'lucide-react'
 import { ROUTES } from '@/shared/constants/routes'
+import { unlockTTS } from '../services/ttsUnlock'
 
 const AUTO_HIDE_PATHS = [ROUTES.ASSISTANT, ROUTES.VOICE_CALL]
 const SIZE = 64
@@ -77,6 +78,7 @@ export default function FloatingAssistant() {
       longPressTimer.current = null
       if (pressInfoRef.current && !pressInfoRef.current.moved) {
         pressInfoRef.current.longPressFired = true
+        unlockTTS()
         navigate(ROUTES.VOICE_CALL)
       }
     }, 600)
@@ -126,6 +128,7 @@ export default function FloatingAssistant() {
 
     // 单击：进 AI 主页（长按已在定时器里触发进通话页）
     if (info && !info.longPressFired) {
+      unlockTTS()
       navigate(ROUTES.ASSISTANT)
     }
   }

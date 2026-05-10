@@ -22,8 +22,6 @@ export function useSpeechSynthesis(): SpeechSynthesisApi {
     if (!supported) return
     const voices = window.speechSynthesis.getVoices()
     if (!voices.length) return
-
-    // 优先：普通话女声
     const priority = [
       (v: SpeechSynthesisVoice) => v.lang === 'zh-CN' && /female|女|huihui|xiaoyi|xiaoxiao/i.test(v.name),
       (v: SpeechSynthesisVoice) => v.lang === 'zh-CN',
@@ -44,9 +42,7 @@ export function useSpeechSynthesis(): SpeechSynthesisApi {
 
   const doSpeak = useCallback((text: string, opts?: SpeakOptions) => {
     if (!supported || !text.trim()) return
-
-    // 部分浏览器 synthesis 在页面失焦后会暂停，主动 resume 一下
-    if (window.speechSynthesis.paused) window.speechSynthesis.resume()
+    try { window.speechSynthesis.resume() } catch { /* ignore */ }
     window.speechSynthesis.cancel()
 
     const utter = new SpeechSynthesisUtterance(text)
@@ -59,11 +55,9 @@ export function useSpeechSynthesis(): SpeechSynthesisApi {
     utter.onstart = () => { setSpeaking(true); opts?.onStart?.() }
     utter.onend   = () => { setSpeaking(false); opts?.onEnd?.() }
     utter.onerror = (e) => {
-      // interrupted 是 cancel() 触发的，不算真正错误
       if ((e as any).error !== 'interrupted') setSpeaking(false)
       opts?.onEnd?.()
     }
-
     window.speechSynthesis.speak(utter)
   }, [supported])
 
@@ -71,7 +65,7 @@ export function useSpeechSynthesis(): SpeechSynthesisApi {
     if (!supported) return
     const voices = window.speechSynthesis.getVoices()
     if (!voices.length) {
-      // 语音包还没加载，缓存起来等 voiceschanged 后播
+      // 语音包还没加载，等 voiceschanged 后自动补播
       pendingRef.current = { text, opts }
       return
     }

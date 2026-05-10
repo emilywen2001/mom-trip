@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>AI 旅行管家 · 小橙</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============== 设计令牌 ============== */
+  :root {
+    --warm-orange: #FF9A56;
+    --soft-orange: #FFB88C;
+    --caramel: #E07B3F;
+    --cream: #FFF4E6;
+    --milk: #FFFBF5;
+    --peach: #FFEDD5;
+    --warm-brown: #4A3520;
+    --light-brown: #8B7355;
+    --sage: #A8B89F;
+    --soft-red: #E87A6F;
+  }
+
+  body {
+    font-family: 'Noto Serif SC', system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", serif;
+    background: linear-gradient(180deg, #FFFBF5 0%, #FFEDD5 100%);
+    color: var(--warm-brown);
+    overscroll-behavior: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .font-display {
+    font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif;
+    letter-spacing: 0.02em;
+  }
+
+  /* ============== 手机外壳 ============== */
+  .phone-frame {
+    width: 390px;
+    height: 844px;
+    border-radius: 48px;
+    overflow: hidden;
+    position: relative;
+    background: linear-gradient(180deg, #FFFBF5 0%, #FFEDD5 100%);
+    box-shadow:
+      0 0 0 12px #2a2a2a,
+      0 0 0 14px #444,
+      0 30px 80px rgba(74, 53, 32, 0.3);
+  }
+
+  /* ============== 纸张纹理叠加 ============== */
+  .paper-texture::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.4 0 0 0 0 0.3 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23noise)'/%3E%3C/svg%3E");
+    opacity: 0.5;
+    z-index: 1;
+  }
+
+  /* ============== 呼吸光晕 ============== */
+  @keyframes breathe-ring {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.15); opacity: 0.2; }
+  }
+  .breathe-ring {
+    animation: breathe-ring 3s ease-in-out infinite;
+  }
+  .breathe-ring-2 { animation-delay: 0.6s; }
+  .breathe-ring-3 { animation-delay: 1.2s; }
+
+  /* ============== 麦克风波纹（录音中） ============== */
+  @keyframes mic-pulse {
+    0% { transform: scale(1); opacity: 0.7; }
+    100% { transform: scale(1.6); opacity: 0; }
+  }
+  .mic-pulse-ring {
+    animation: mic-pulse 1.5s ease-out infinite;
+  }
+
+  /* ============== 悬浮球浮动 ============== */
+  @keyframes float-bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+  .float-bob { animation: float-bob 3s ease-in-out infinite; }
+
+  /* ============== 通话页 AI 形象波纹 ============== */
+  @keyframes call-wave {
+    0% { transform: scale(0.8); opacity: 0.6; }
+    100% { transform: scale(1.8); opacity: 0; }
+  }
+  .call-wave {
+    animation: call-wave 2.5s ease-out infinite;
+  }
+  .call-wave-2 { animation-delay: 0.6s; }
+  .call-wave-3 { animation-delay: 1.2s; }
+  .call-wave-4 { animation-delay: 1.8s; }
+
+  /* 聆听状态：波纹加快 */
+  .state-listening .call-wave {
+    animation-duration: 1.2s;
+  }
+  /* 说话状态：AI 形象嘴部跳动 */
+  @keyframes speak-bounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  .state-speaking .ai-avatar-large {
+    animation: speak-bounce 0.4s ease-in-out infinite;
+  }
+
+  /* ============== 打字机光标 ============== */
+  @keyframes typing-cursor {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+  }
+  .typing-cursor::after {
+    content: '|';
+    animation: typing-cursor 0.8s infinite;
+    color: var(--warm-orange);
+    font-weight: 700;
+  }
+
+  /* ============== 卡片悬停 ============== */
+  .question-card {
+    transition: all 0.2s ease;
+  }
+  .question-card:active {
+    transform: scale(0.97);
+    background: #FFE4C4 !important;
+  }
+
+  /* ============== 隐藏滚动条 ============== */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* ============== 通话页背景 ============== */
+  .call-bg {
+    background:
+      radial-gradient(circle at 30% 20%, #FFB88C 0%, transparent 50%),
+      radial-gradient(circle at 70% 80%, #FFCAA0 0%, transparent 50%),
+      linear-gradient(180deg, #FF9A56 0%, #E07B3F 100%);
+  }
+
+  /* ============== 话筒图标按下放大 ============== */
+  .mic-btn-active {
+    transform: scale(0.92);
+    background: #E87A6F !important;
+  }
+
+  /* ============== 提示气泡尾巴 ============== */
+  .tip-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    right: 16px;
+    width: 12px;
+    height: 12px;
+    background: white;
+    transform: rotate(45deg);
+  }
+
+  /* ============== 淡入淡出 ============== */
+  .fade-in { animation: fadeIn 0.4s ease-out; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .fade-out {
+    animation: fadeOut 0.3s ease-out forwards;
+  }
+  @keyframes fadeOut {
+    to { opacity: 0; }
+  }
+
+  /* ============== 装饰小元素 ============== */
+  .deco-leaf {
+    position: absolute;
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  /* 安全区底部 */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+</style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+<div class="phone-frame paper-texture">
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- 状态 1：主页面                           -->
+  <!-- ═══════════════════════════════════════ -->
+  <div id="mainPage" class="relative w-full h-full overflow-hidden" style="z-index: 2;">
+
+    <!-- 装饰：左上角小叶子 -->
+    <svg class="deco-leaf" style="top: 100px; left: 12px; width: 40px; transform: rotate(-20deg);" viewBox="0 0 40 40">
+      <path d="M20 5 Q 30 15, 25 30 Q 20 25, 20 5 Z" fill="#A8B89F" opacity="0.5"/>
+    </svg>
+    <!-- 装饰：右侧小太阳 -->
+    <svg class="deco-leaf" style="top: 130px; right: 16px; width: 28px;" viewBox="0 0 28 28">
+      <circle cx="14" cy="14" r="6" fill="#FFB88C"/>
+      <g stroke="#FFB88C" stroke-width="1.5" stroke-linecap="round">
+        <line x1="14" y1="2" x2="14" y2="6"/>
+        <line x1="14" y1="22" x2="14" y2="26"/>
+        <line x1="2" y1="14" x2="6" y2="14"/>
+        <line x1="22" y1="14" x2="26" y2="14"/>
+      </g>
+    </svg>
+
+    <!-- ===== 状态栏占位 ===== -->
+    <div class="h-11 flex items-center justify-between px-7 text-xs font-semibold pt-2 text-warm-brown" style="color: var(--warm-brown);">
+      <span>9:41</span>
+      <div class="flex items-center gap-1">
+        <span>●●●●●</span>
+        <span>📶</span>
+        <span>🔋</span>
+      </div>
+    </div>
+
+    <!-- ===== 顶部导航栏 ===== -->
+    <div class="px-5 pt-2 pb-3 flex items-center justify-between">
+      <button class="w-10 h-10 rounded-full bg-white/80 flex items-center justify-center shadow-sm active:scale-95 transition" style="box-shadow: 0 2px 8px rgba(74,53,32,0.08);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4A3520" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
+
+      <div class="text-center">
+        <div class="font-display text-xl font-semibold" style="color: var(--warm-brown);">AI 旅行管家</div>
+        <div class="text-xs mt-0.5" style="color: var(--light-brown);">小橙陪你去旅行</div>
+      </div>
+
+      <button id="parseBtn" class="px-3 py-2 rounded-full flex items-center gap-1.5 active:scale-95 transition" style="background: var(--cream); border: 1.5px solid var(--warm-orange);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E07B3F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        </svg>
+        <span class="text-xs font-semibold" style="color: var(--caramel);">智能解析</span>
+      </button>
+    </div>
+
+    <!-- ===== 主语音按钮区 ===== -->
+    <div class="flex flex-col items-center mt-6 mb-4">
+      <!-- 状态文字 -->
+      <div class="text-sm mb-6" style="color: var(--light-brown);">
+        <span id="mainStatusText">轻轻一按 · 和小橙聊聊吧</span>
+      </div>
+
+      <!-- 大圆形按钮 -->
+      <div class="relative" style="width: 200px; height: 200px;">
+        <!-- 呼吸光晕 -->
+        <div class="absolute inset-0 rounded-full breathe-ring" style="background: radial-gradient(circle, rgba(255, 154, 86, 0.4) 0%, transparent 70%);"></div>
+        <div class="absolute inset-2 rounded-full breathe-ring breathe-ring-2" style="background: radial-gradient(circle, rgba(255, 154, 86, 0.3) 0%, transparent 70%);"></div>
+        <div class="absolute inset-4 rounded-full breathe-ring breathe-ring-3" style="background: radial-gradient(circle, rgba(255, 154, 86, 0.2) 0%, transparent 70%);"></div>
+
+        <!-- 主按钮 -->
+        <button id="mainCallBtn" class="absolute inset-6 rounded-full flex items-center justify-center active:scale-95 transition-transform"
+          style="background: radial-gradient(circle at 30% 30%, #FFB88C 0%, #FF9A56 70%, #E07B3F 100%); box-shadow: 0 12px 32px rgba(224, 123, 63, 0.4), inset 0 -4px 12px rgba(224, 123, 63, 0.3), inset 0 4px 12px rgba(255, 255, 255, 0.3);">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- 按钮下方文字 -->
+      <div class="mt-4 text-center">
+        <div class="font-display text-lg font-semibold" style="color: var(--warm-brown);">点我开始通话</div>
+        <div class="text-xs mt-1" style="color: var(--light-brown);">或试试下面的常见问题 ↓</div>
+      </div>
+    </div>
+
+    <!-- ===== 热门问题推荐 ===== -->
+    <div class="px-5 mt-2">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-base">💬</span>
+        <span class="font-display text-base font-semibold" style="color: var(--warm-brown);">妈妈们都在问</span>
+        <div class="flex-1 h-px ml-2" style="background: linear-gradient(to right, rgba(224, 123, 63, 0.3), transparent);"></div>
+      </div>
+
+      <div class="space-y-2.5">
+        <button class="question-card w-full flex items-center gap-3 px-4 py-3 rounded-2xl active:scale-98 transition" style="background: var(--cream); border: 1px solid rgba(255, 154, 86, 0.2);" onclick="askQuestion('推荐适合妈妈的旅游城市')">
+          <span class="text-2xl">🍜</span>
+          <span class="flex-1 text-left text-base" style="color: var(--warm-brown);">推荐适合妈妈的旅游城市</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E07B3F" stroke-width="2.5" stroke-linecap="round">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </button>
+
+        <button class="question-card w-full flex items-center gap-3 px-4 py-3 rounded-2xl active:scale-98 transition" style="background: var(--cream); border: 1px solid rgba(255, 154, 86, 0.2);" onclick="askQuestion('出门旅游要带什么东西')">
+          <span class="text-2xl">🎒</span>
+          <span class="flex-1 text-left text-base" style="color: var(--warm-brown);">出门旅游要带什么东西</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E07B3F" stroke-width="2.5" stroke-linecap="round">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </button>
+
+        <button class="question-card w-full flex items-center gap-3 px-4 py-3 rounded-2xl active:scale-98 transition" style="background: var(--cream); border: 1px solid rgba(255, 154, 86, 0.2);" onclick="askQuestion('怎么拍照好看显瘦')">
+          <span class="text-2xl">📸</span>
+          <span class="flex-1 text-left text-base" style="color: var(--warm-brown);">怎么拍照好看显瘦</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E07B3F" stroke-width="2.5" stroke-linecap="round">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </button>
+
+        <button class="question-card w-full flex items-center gap-3 px-4 py-3 rounded-2xl active:scale-98 transition" style="background: var(--cream); border: 1px solid rgba(255, 154, 86, 0.2);" onclick="askQuestion('旅途突发不舒服怎么办')">
+          <span class="text-2xl">🏥</span>
+          <span class="flex-1 text-left text-base" style="color: var(--warm-brown);">旅途突发不舒服怎么办</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E07B3F" stroke-width="2.5" stroke-linecap="round">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== 悬浮 AI 形象 ===== -->
+    <div id="floatingAvatar" class="absolute" style="bottom: 110px; right: 16px; z-index: 30;">
+      <!-- 提示气泡 -->
+      <div id="tipBubble" class="tip-bubble absolute bg-white rounded-2xl px-3 py-2 text-xs whitespace-nowrap shadow-lg" style="bottom: 78px; right: 0; color: var(--warm-brown); box-shadow: 0 4px 16px rgba(74,53,32,0.15);">
+        需要帮忙就叫我～
+      </div>
+
+      <button onclick="openCallPage()" class="float-bob relative w-16 h-16 rounded-full flex items-center justify-center active:scale-95 transition"
+        style="background: radial-gradient(circle at 30% 30%, #FFCAA0 0%, #FF9A56 100%); box-shadow: 0 6px 20px rgba(224, 123, 63, 0.4);">
+        <!-- AI 形象（占位，建议替换为 Lottie） -->
+        <span class="text-3xl">🐻</span>
+      </button>
+
+      <!-- 关闭按钮 -->
+      <button onclick="hideFloating()" class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-white flex items-center justify-center text-xs" style="color: var(--light-brown); box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+        ✕
+      </button>
+    </div>
+
+    <!-- ===== 底部导航栏 ===== -->
+    <div class="absolute bottom-0 left-0 right-0 safe-bottom" style="z-index: 20;">
+      <div class="bg-white/95 backdrop-blur-md pt-2 pb-2 px-2" style="border-top: 1px solid rgba(255, 154, 86, 0.15); box-shadow: 0 -4px 16px rgba(74, 53, 32, 0.06);">
+        <div class="flex items-end justify-around relative">
+
+          <!-- 首页 -->
+          <button class="flex flex-col items-center gap-0.5 py-1 px-3 active:scale-95 transition">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8B7355" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            </svg>
+            <span class="text-xs" style="color: var(--light-brown);">首页</span>
+          </button>
+
+          <!-- 行程 -->
+          <button class="flex flex-col items-center gap-0.5 py-1 px-3 active:scale-95 transition">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8B7355" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+            <span class="text-xs" style="color: var(--light-brown);">行程</span>
+          </button>
+
+          <!-- 中间凸起拍照按钮 -->
+          <button class="relative flex flex-col items-center -mt-7 active:scale-95 transition">
+            <div class="w-14 h-14 rounded-full flex items-center justify-center"
+              style="background: radial-gradient(circle at 30% 30%, #FFCAA0 0%, #FF9A56 100%); box-shadow: 0 6px 16px rgba(224, 123, 63, 0.4), inset 0 -3px 8px rgba(224, 123, 63, 0.3);">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+            </div>
+            <span class="text-xs mt-1 font-semibold" style="color: var(--caramel);">拍照</span>
+          </button>
+
+          <!-- AI 助手（高亮） -->
+          <button class="flex flex-col items-center gap-0.5 py-1 px-3 active:scale-95 transition relative">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="#FF9A56" stroke="#E07B3F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="10" rx="2"/>
+              <circle cx="12" cy="5" r="2"/>
+              <path d="M12 7v4"/>
+              <line x1="8" y1="16" x2="8" y2="16"/>
+              <line x1="16" y1="16" x2="16" y2="16"/>
+            </svg>
+            <span class="text-xs font-semibold" style="color: var(--caramel);">小橙</span>
+            <div class="absolute -bottom-0.5 w-1 h-1 rounded-full" style="background: var(--caramel);"></div>
+          </button>
+
+          <!-- 我的 -->
+          <button class="flex flex-col items-center gap-0.5 py-1 px-3 active:scale-95 transition">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8B7355" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span class="text-xs" style="color: var(--light-brown);">我的</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- 状态 2：通话页                           -->
+  <!-- ═══════════════════════════════════════ -->
+  <div id="callPage" class="absolute inset-0 hidden call-bg" style="z-index: 50;">
+
+    <!-- 状态栏 -->
+    <div class="h-11 flex items-center justify-between px-7 text-xs font-semibold pt-2 text-white">
+      <span>9:41</span>
+      <div class="flex items-center gap-1">
+        <span>●●●●●</span>
+        <span>📶</span>
+        <span>🔋</span>
+      </div>
+    </div>
+
+    <!-- 顶部信息 -->
+    <div class="text-center pt-4 pb-2">
+      <div class="text-white text-base font-display" id="callStateText">小橙在等你说话</div>
+      <div class="text-white/70 text-xs mt-1">通话时长 <span id="callTimer">00:00</span></div>
+    </div>
+
+    <!-- AI 形象大图 -->
+    <div id="callAvatarContainer" class="state-idle relative flex items-center justify-center" style="height: 240px; margin-top: 20px;">
+      <!-- 波纹 -->
+      <div class="absolute rounded-full call-wave" style="width: 200px; height: 200px; background: rgba(255, 255, 255, 0.3);"></div>
+      <div class="absolute rounded-full call-wave call-wave-2" style="width: 200px; height: 200px; background: rgba(255, 255, 255, 0.25);"></div>
+      <div class="absolute rounded-full call-wave call-wave-3" style="width: 200px; height: 200px; background: rgba(255, 255, 255, 0.2);"></div>
+      <div class="absolute rounded-full call-wave call-wave-4" style="width: 200px; height: 200px; background: rgba(255, 255, 255, 0.15);"></div>
+
+      <!-- 形象主体 -->
+      <div class="ai-avatar-large relative w-44 h-44 rounded-full flex items-center justify-center"
+        style="background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 244, 230, 0.9) 100%); box-shadow: 0 12px 40px rgba(74, 53, 32, 0.25);">
+        <span class="text-7xl">🐻</span>
+      </div>
+    </div>
+
+    <!-- 字幕区 -->
+    <div class="mx-5 mt-6 mb-4 rounded-3xl p-4 backdrop-blur-md no-scrollbar overflow-y-auto"
+      style="background: rgba(255, 255, 255, 0.85); height: 160px; box-shadow: 0 8px 24px rgba(74, 53, 32, 0.15);">
+      <div id="dialogArea" class="space-y-2 flex flex-col">
+        <div class="text-center text-sm py-8" style="color: var(--light-brown);" id="dialogPlaceholder">
+          按住下方麦克风开始对话 🎙️
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部控制栏 -->
+    <div class="absolute bottom-0 left-0 right-0 pb-10 px-8 safe-bottom">
+      <div class="flex items-end justify-between">
+        <!-- 文字模式 -->
+        <button class="flex flex-col items-center gap-1.5 active:scale-95 transition" onclick="alert('文字输入模式')">
+          <div class="w-14 h-14 rounded-full flex items-center justify-center backdrop-blur-md" style="background: rgba(255, 255, 255, 0.25); border: 1.5px solid rgba(255, 255, 255, 0.4);">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <span class="text-white/90 text-xs">文字</span>
+        </button>
+
+        <!-- 麦克风（核心） -->
+        <button id="micBtn" class="flex flex-col items-center gap-1.5">
+          <div class="relative">
+            <!-- 录音波纹（仅录音时显示） -->
+            <div id="micRing1" class="hidden absolute inset-0 rounded-full mic-pulse-ring" style="background: rgba(232, 122, 111, 0.4);"></div>
+            <div id="micRing2" class="hidden absolute inset-0 rounded-full mic-pulse-ring" style="background: rgba(232, 122, 111, 0.3); animation-delay: 0.5s;"></div>
+
+            <div id="micCircle" class="relative w-20 h-20 rounded-full flex items-center justify-center transition-all"
+              style="background: white; box-shadow: 0 8px 24px rgba(74, 53, 32, 0.3);">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#E07B3F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+            </div>
+          </div>
+          <span class="text-white text-xs font-semibold" id="micLabel">按住说话</span>
+        </button>
+
+        <!-- 挂断 -->
+        <button class="flex flex-col items-center gap-1.5 active:scale-95 transition" onclick="closeCallPage()">
+          <div class="w-14 h-14 rounded-full flex items-center justify-center" style="background: #E87A6F; box-shadow: 0 6px 16px rgba(232, 122, 111, 0.4);">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform: rotate(135deg);">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+          </div>
+          <span class="text-white/90 text-xs">挂断</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 浏览器外提示（不支持时显示） -->
+<div id="unsupportedTip" class="hidden fixed top-4 left-1/2 -translate-x-1/2 bg-white px-4 py-3 rounded-2xl shadow-xl text-sm z-50" style="color: var(--warm-brown); max-width: 320px;">
+  ⚠️ 当前浏览器不支持完整语音功能，请用 <b>Chrome</b> 或 <b>Safari</b> 打开
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- JavaScript 逻辑                          -->
+<!-- ═══════════════════════════════════════ -->
+<script>
+  // ============== DOM 引用 ==============
+  const mainPage = document.getElementById('mainPage');
+  const callPage = document.getElementById('callPage');
+  const callStateText = document.getElementById('callStateText');
+  const callTimer = document.getElementById('callTimer');
+  const callAvatarContainer = document.getElementById('callAvatarContainer');
+  const dialogArea = document.getElementById('dialogArea');
+  const dialogPlaceholder = document.getElementById('dialogPlaceholder');
+  const micBtn = document.getElementById('micBtn');
+  const micCircle = document.getElementById('micCircle');
+  const micLabel = document.getElementById('micLabel');
+  const micRing1 = document.getElementById('micRing1');
+  const micRing2 = document.getElementById('micRing2');
+  const tipBubble = document.getElementById('tipBubble');
+  const floatingAvatar = document.getElementById('floatingAvatar');
+  const unsupportedTip = document.getElementById('unsupportedTip');
+  const parseBtn = document.getElementById('parseBtn');
+
+  // ============== 全局状态 ==============
+  let timerInterval = null;
+  let callStartTime = null;
+  let recognition = null;
+  let isRecording = false;
+  let currentUtterance = null;
+  let voicesReady = false;
+  let chineseVoice = null;
+
+  // ============== 初始化 ==============
+  // 隐藏开屏提示气泡（3 秒后）
+  setTimeout(() => {
+    if (tipBubble) {
+      tipBubble.classList.add('fade-out');
+      setTimeout(() => tipBubble.remove(), 400);
+    }
+  }, 3000);
+
+  // 检测浏览器支持
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const speechSynthesisSupported = 'speechSynthesis' in window;
+
+  if (!SpeechRecognition || !speechSynthesisSupported) {
+    unsupportedTip.classList.remove('hidden');
+    setTimeout(() => unsupportedTip.classList.add('hidden'), 5000);
+  }
+
+  // 预热语音列表（Chrome 需要）
+  function loadVoices() {
+    const voices = speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      // 优先选中文女声
+      chineseVoice = voices.find(v => v.lang.startsWith('zh') && (v.name.includes('Female') || v.name.includes('女') || v.name.includes('Yue') || v.name.includes('Ting')))
+        || voices.find(v => v.lang.startsWith('zh-CN'))
+        || voices.find(v => v.lang.startsWith('zh'));
+      voicesReady = true;
+    }
+  }
+  if (speechSynthesisSupported) {
+    loadVoices();
+    speechSynthesis.onvoiceschanged = loadVoices;
+  }
+
+  // ============== AI 形象状态控制 ==============
+  function setAIState(state) {
+    callAvatarContainer.classList.remove('state-idle', 'state-listening', 'state-speaking');
+    callAvatarContainer.classList.add(`state-${state}`);
+
+    const stateMap = {
+      idle: '小橙在等你说话',
+      listening: '小橙正在听你说...',
+      speaking: '小橙正在回答~',
+      thinking: '小橙在想想哦...'
+    };
+    callStateText.textContent = stateMap[state] || stateMap.idle;
+  }
+
+  // ============== 通话页打开/关闭 ==============
+  function openCallPage(initialQuestion = null) {
+    callPage.classList.remove('hidden');
+    callPage.classList.add('fade-in');
+
+    // 启动计时
+    callStartTime = Date.now();
+    timerInterval = setInterval(updateTimer, 1000);
+
+    setAIState('idle');
+
+    // 如果有初始问题（用户点了推荐卡片），直接模拟提问
+    if (initialQuestion) {
+      setTimeout(() => {
+        addUserBubble(initialQuestion);
+        handleAIReply(initialQuestion);
+      }, 500);
+    }
+  }
+
+  function closeCallPage() {
+    // 停止所有语音活动
+    if (recognition && isRecording) {
+      try { recognition.stop(); } catch(e) {}
+    }
+    if (speechSynthesisSupported) {
+      speechSynthesis.cancel();
+    }
+
+    callPage.classList.add('hidden');
+    callPage.classList.remove('fade-in');
+
+    // 清空对话
+    setTimeout(() => {
+      dialogArea.innerHTML = '<div class="text-center text-sm py-8" style="color: var(--light-brown);">按住下方麦克风开始对话 🎙️</div>';
+    }, 300);
+
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+    callTimer.textContent = '00:00';
+  }
+
+  function updateTimer() {
+    const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
+    const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const s = String(elapsed % 60).padStart(2, '0');
+    callTimer.textContent = `${m}:${s}`;
+  }
+
+  // ============== 推荐问题点击 ==============
+  function askQuestion(question) {
+    openCallPage(question);
+  }
+
+  // ============== 悬浮球控制 ==============
+  function hideFloating() {
+    floatingAvatar.classList.add('fade-out');
+    setTimeout(() => floatingAvatar.style.display = 'none', 300);
+  }
+
+  // 智能解析按钮（mock）
+  parseBtn.addEventListener('click', () => {
+    showToast('🔗 请粘贴小红书笔记链接');
+  });
+
+  function showToast(msg) {
+    const toast = document.createElement('div');
+    toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 bg-white px-4 py-2.5 rounded-full text-sm shadow-lg z-50';
+    toast.style.color = 'var(--warm-brown)';
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
+  }
+
+  // ============== 对话气泡渲染 ==============
+  function addUserBubble(text) {
+    if (dialogPlaceholder && dialogPlaceholder.parentNode) {
+      dialogPlaceholder.remove();
+    }
+    const bubble = document.createElement('div');
+    bubble.className = 'fade-in self-end max-w-[85%] px-3.5 py-2 rounded-2xl rounded-tr-md text-sm';
+    bubble.style.cssText = 'background: #FFEDD5; color: #4A3520;';
+    bubble.textContent = text;
+    dialogArea.appendChild(bubble);
+    dialogArea.parentElement.scrollTop = dialogArea.parentElement.scrollHeight;
+    return bubble;
+  }
+
+  function addAIBubble() {
+    const bubble = document.createElement('div');
+    bubble.className = 'fade-in self-start max-w-[85%] px-3.5 py-2 rounded-2xl rounded-tl-md text-sm typing-cursor';
+    bubble.style.cssText = 'background: white; color: #4A3520; box-shadow: 0 2px 8px rgba(74,53,32,0.06);';
+    bubble.textContent = '';
+    dialogArea.appendChild(bubble);
+    dialogArea.parentElement.scrollTop = dialogArea.parentElement.scrollHeight;
+    return bubble;
+  }
+
+  // 打字机效果
+  async function typewriterEffect(bubble, text, speed = 50) {
+    bubble.classList.add('typing-cursor');
+    for (let i = 0; i <= text.length; i++) {
+      bubble.textContent = text.slice(0, i);
+      dialogArea.parentElement.scrollTop = dialogArea.parentElement.scrollHeight;
+      await new Promise(r => setTimeout(r, speed));
+    }
+    bubble.classList.remove('typing-cursor');
+  }
+
+  // ============== Mock AI 回复 ==============
+  // TODO: 接入真实 LLM API（推荐 DeepSeek）
+  // 示例：
+  // const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+  //   method: 'POST',
+  //   headers: { 'Authorization': 'Bearer YOUR_KEY', 'Content-Type': 'application/json' },
+  //   body: JSON.stringify({
+  //     model: 'deepseek-chat',
+  //     messages: [
+  //       { role: 'system', content: '你是名叫小橙的旅行助手,用温柔语气服务妈妈群体,回复简短(80字内)。' },
+  //       { role: 'user', content: userText }
+  //     ]
+  //   })
+  // });
+  function getMockReply(userText) {
+    const text = userText.toLowerCase();
+    if (text.includes('城市') || text.includes('推荐') || text.includes('哪里')) {
+      return '推荐成都和厦门哦~成都气候温和不冷不热,美食又多;厦门海边风景好,鼓浪屿走走特别舒服。';
+    }
+    if (text.includes('带') || text.includes('什么') && text.includes('东西')) {
+      return '记得带防晒霜、常用药、舒服的鞋子和保温杯。证件、充电器也别忘啦,我帮您列个清单?';
+    }
+    if (text.includes('拍照') || text.includes('好看') || text.includes('显瘦')) {
+      return '拍照试试逆光、侧身45度,手插腰会显腰细。颜色穿亮一点比如橙色、黄色,镜头里特别有精神~';
+    }
+    if (text.includes('不舒服') || text.includes('生病') || text.includes('医院')) {
+      return '别担心,景区都有医务室。出门记得带常用药,不舒服第一时间告诉同伴。需要我查附近医院吗?';
+    }
+    if (text.includes('你好') || text.includes('hi') || text.includes('在吗')) {
+      return '我在的呀!有什么旅行问题尽管问我哦~';
+    }
+    if (text.includes('谢谢') || text.includes('感谢')) {
+      return '不客气啦,这是我应该做的~您一路平安开心最重要!';
+    }
+    return '好的,我帮您看看这个问题。您是想了解具体哪方面呢?可以再说详细一点哦~';
+  }
+
+  async function handleAIReply(userText) {
+    setAIState('thinking');
+
+    // 模拟思考延迟
+    await new Promise(r => setTimeout(r, 600));
+
+    const replyText = getMockReply(userText);
+    const bubble = addAIBubble();
+
+    setAIState('speaking');
+
+    // 同时启动文字打字机和语音合成
+    speakText(replyText);
+    await typewriterEffect(bubble, replyText, 60);
+  }
+
+  // ============== 语音合成（关键!） ==============
+  function speakText(text) {
+    if (!speechSynthesisSupported) return;
+
+    // 取消之前的播放
+    speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'zh-CN';
+    utterance.rate = 0.9;
+    utterance.pitch = 1.1;
+    utterance.volume = 1.0;
+
+    if (chineseVoice) {
+      utterance.voice = chineseVoice;
+    }
+
+    utterance.onstart = () => setAIState('speaking');
+    utterance.onend = () => setAIState('idle');
+    utterance.onerror = () => setAIState('idle');
+
+    currentUtterance = utterance;
+    speechSynthesis.speak(utterance);
+  }
+
+  // ============== 语音识别 ==============
+  function initRecognition() {
+    if (!SpeechRecognition) return null;
+
+    const r = new SpeechRecognition();
+    r.lang = 'zh-CN';
+    r.continuous = false;
+    r.interimResults = true;
+
+    let finalText = '';
+    let interimBubble = null;
+
+    r.onstart = () => {
+      setAIState('listening');
+      finalText = '';
+      interimBubble = null;
+    };
+
+    r.onresult = (event) => {
+      let interim = '';
+      let final = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          final += transcript;
+        } else {
+          interim += transcript;
+        }
+      }
+
+      if (interim) {
+        if (!interimBubble) {
+          interimBubble = addUserBubble(interim);
+        } else {
+          interimBubble.textContent = interim;
+        }
+      }
+      if (final) {
+        finalText = final;
+        if (interimBubble) {
+          interimBubble.textContent = final;
+        } else {
+          addUserBubble(final);
+        }
+      }
+    };
+
+    r.onend = () => {
+      isRecording = false;
+      stopMicVisual();
+
+      if (finalText.trim()) {
+        handleAIReply(finalText.trim());
+      } else {
+        setAIState('idle');
+      }
+    };
+
+    r.onerror = (e) => {
+      isRecording = false;
+      stopMicVisual();
+      setAIState('idle');
+      if (e.error === 'not-allowed') {
+        showToast('⚠️ 请允许麦克风权限');
+      }
+    };
+
+    return r;
+  }
+
+  function startMicVisual() {
+    micCircle.classList.add('mic-btn-active');
+    micCircle.querySelector('svg').setAttribute('stroke', 'white');
+    micRing1.classList.remove('hidden');
+    micRing2.classList.remove('hidden');
+    micLabel.textContent = '松开发送';
+  }
+
+  function stopMicVisual() {
+    micCircle.classList.remove('mic-btn-active');
+    micCircle.querySelector('svg').setAttribute('stroke', '#E07B3F');
+    micRing1.classList.add('hidden');
+    micRing2.classList.add('hidden');
+    micLabel.textContent = '按住说话';
+  }
+
+  // ============== 麦克风按钮交互（按住说话） ==============
+  let pressTimer = null;
+
+  function startRecording(e) {
+    e.preventDefault();
+    if (isRecording) return;
+
+    if (!SpeechRecognition) {
+      showToast('⚠️ 请用 Chrome 或 Safari');
+      return;
+    }
+
+    // 停止 AI 当前播放(打断功能)
+    if (speechSynthesisSupported) {
+      speechSynthesis.cancel();
+    }
+
+    if (!recognition) {
+      recognition = initRecognition();
+    }
+
+    try {
+      recognition.start();
+      isRecording = true;
+      startMicVisual();
+    } catch (err) {
+      console.error('录音启动失败:', err);
+    }
+  }
+
+  function stopRecording(e) {
+    e.preventDefault();
+    if (!isRecording || !recognition) return;
+    try {
+      recognition.stop();
+    } catch (err) {
+      console.error('录音停止失败:', err);
+    }
+  }
+
+  // 触摸事件(移动端)
+  micBtn.addEventListener('touchstart', startRecording, { passive: false });
+  micBtn.addEventListener('touchend', stopRecording, { passive: false });
+  micBtn.addEventListener('touchcancel', stopRecording, { passive: false });
+
+  // 鼠标事件(桌面端测试)
+  micBtn.addEventListener('mousedown', startRecording);
+  micBtn.addEventListener('mouseup', stopRecording);
+  micBtn.addEventListener('mouseleave', (e) => {
+    if (isRecording) stopRecording(e);
+  });
+
+  // ============== 主页面大按钮:点击进入通话页 ==============
+  document.getElementById('mainCallBtn').addEventListener('click', () => {
+    openCallPage();
+  });
+
+  // 全局暴露
+  window.openCallPage = openCallPage;
+  window.closeCallPage = closeCallPage;
+  window.askQuestion = askQuestion;
+  window.hideFloating = hideFloating;
+</script>
+
+</body>
+</html>
